@@ -1,0 +1,14 @@
+syntax: glob
+
+*~
+**.jar
+**.h5
+.cake
+.eshell-bufname
+.gitignore
+build
+classes
+lib
+tools
+pom.xml
+test
