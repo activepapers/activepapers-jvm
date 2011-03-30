@@ -310,12 +310,23 @@
                       (make-datatype :string maxlen :native :native)
                       [(count strings)] bytes)))
 
+(defn get-object-reference
+  [object]
+  (assert (node? object))
+  (. ncsa.hdf.hdf5lib.H5 H5Rcreate
+     (.getFID object)
+     (path object)
+     ncsa.hdf.hdf5lib.HDF5Constants/H5R_OBJECT
+     -1))
+
 (defn create-reference-attribute
   [node name objects]
   (assert (every? node? objects))
   (create-attribute node name
                     (make-datatype :reference :native :native :native)
-                    [(count objects)] (into-array objects)))
+                    [(count objects)]
+                    (into-array (class (make-array Byte/TYPE 0))
+                                (map get-object-reference objects))))
 
 (defn retrieve-object-from-ref
   [root-group object-ref]

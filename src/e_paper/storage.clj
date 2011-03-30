@@ -29,10 +29,7 @@
     (hdf5/create-string-attribute ds "jvm-main-class" [main-class-name])
     ; Add an empty string because HDF5 cannot handle empty arrays.
     (hdf5/create-string-attribute ds "jvm-args" (conj (vec args) ""))
-    ; Replace references by paths until I figure out how to read
-    ; references back!
-    ;; (hdf5/create-reference-attribute ds "jvm-jar-files" jars)
-    (hdf5/create-string-attribute ds "jvm-jar-files" (map hdf5/path jars))
+    (hdf5/create-reference-attribute ds "jvm-jar-files" jars)
     ds))
 
 (defn get-script
@@ -55,7 +52,8 @@
   (let [class-name   (first (hdf5/read-attribute script "jvm-main-class"))
         args         (into-array String
                                  (pop (hdf5/read-attribute script "jvm-args")))
-        jars         (map #(hdf5/lookup script %)
+        jars         (map #(hdf5/retrieve-object-from-ref
+                            (hdf5/lookup script "/") %)
                           (hdf5/read-attribute script "jvm-jar-files"))
         jar-files    (reduce write-jar '() jars)
         script-file  (write-script script)
