@@ -188,7 +188,7 @@
 
 ; Datasets
 
-(defn create-scalar-dataset
+(defn create-dataset
   ([parent name datatype dims max-dims chunks gzip-level]
    (assert (group? parent))
    (. (file parent) createScalarDS
@@ -198,22 +198,26 @@
       (if (nil? chunks) nil (long-array chunks))
       gzip-level nil))
   ([parent name datatype dims max-dims chunks]
-     (create-scalar-dataset parent name datatype dims max-dims chunks 0))
+     (create-dataset parent name datatype dims max-dims chunks 0))
   ([parent name datatype dims max-dims]
-     (create-scalar-dataset parent name datatype dims max-dims nil 0))
+     (create-dataset parent name datatype dims max-dims nil 0))
   ([parent name datatype dims]
-     (create-scalar-dataset parent name datatype dims nil nil 0)))
+     (create-dataset parent name datatype dims nil nil 0)))
 
 (defn write
   [ds data]
   (. ds write data))
 
+(defn read
+  [ds]
+  (.getData ds))
+
 (defn create-string-dataset
   [parent name string]
-  (let [ds (create-scalar-dataset parent name
-                                  (make-datatype :string (inc (count string))
-                                                 :native :native)
-                                  [1])]
+  (let [ds (create-dataset parent name
+                           (make-datatype :string (inc (count string))
+                                          :native :native)
+                           [1])]
     (write ds (into-array [string]))
     ds))
 
@@ -309,6 +313,13 @@
     (create-attribute node name
                       (make-datatype :string maxlen :native :native)
                       [(count strings)] bytes)))
+
+(defn create-int-attribute
+  [node name ints]
+  (assert (every? #(isa? (class %) Integer) ints))
+  (create-attribute node name
+                    (make-datatype :integer 4 :native :native)
+                    [(count ints)] (into-array Integer/TYPE ints)))
 
 (defn get-object-reference
   [object]
