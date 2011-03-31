@@ -6,8 +6,8 @@
 
 (def paper (ep/open (str cwd "simple_paper.h5")))
 
-(def script (ep/get-script paper "hello"))
+(def script (ep/get-program paper "hello"))
 
-(ep/run-script script))
+(ep/run-program script))
 
 (ep/close paper)

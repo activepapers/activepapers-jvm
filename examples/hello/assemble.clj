@@ -7,7 +7,7 @@
 (def paper (ep/create (str cwd "hello_paper.h5")))
 (def hello-jar (ep/store-jar paper "hello"
                                (str cwd "code/hello.jar")))
-(def script (ep/store-script paper "run-hello" nil
-                             [hello-jar]
-                             "HelloWorld" []))
+(def script (ep/store-program paper "run-hello" nil
+                              [hello-jar]
+                              "HelloWorld" []))
 (ep/close paper))
