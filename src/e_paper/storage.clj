@@ -34,24 +34,36 @@
     (hdf5/create-attribute ds "e-paper-datatype" "reference")
     ds))
 
-;; (defn store-program
-;;   [paper ds-name script-filename jars main-class-name args]
-;;   (let [script (if (nil? script-filename) "" (slurp script-filename))
-;;         args   (map (fn [a] (if (= a :script-filename) "" a)) args)
-;;         ds (hdf5/create-string-dataset (hdf5/lookup paper "code")
-;;                                        ds-name script)]
-;;     (hdf5/write ds (into-array String [script]))
-;;     (hdf5/create-string-attribute ds "jvm-main-class" [main-class-name])
-;;     ; Add an empty string because HDF5 cannot handle empty arrays.
-;;     (hdf5/create-string-attribute ds "jvm-args" (conj (vec args) ""))
-;;     (hdf5/create-reference-attribute ds "jvm-jar-files" jars)
-;;     ds))
+(defn- process-program-arg
+  [program arg number]
+  (if (string? arg)
+    arg
+    (case (:type arg)
+      :string
+         (:contents arg)
+      :text-file
+          (let [ds-name (str "arg" number)
+                ds (hdf5/create-dataset program ds-name (:contents arg))]
+            (str "\t" ds-name) ))))
 
+(defn store-program
+  [paper name jars main-class-name args]
+  (let [code    (hdf5/lookup paper "code")
+        program (hdf5/create-group code name)
+        args    (map (fn [arg n] (process-program-arg program arg n))
+                     args (iterate inc 1))]
+    (hdf5/create-attribute program "jvm-main-class" main-class-name)
+    ; Add an empty string to make sure the arg list is never empty,
+    ; because HDF5 cannot handle empty arrays.
+    (hdf5/create-attribute program "args" (conj (vec args) ""))
+    (hdf5/create-attribute program "jvm-jar-files" (map hdf5/path jars))
+    program))
+    
 (defn store-script
-  [paper ds-name script-filename script-engine jars]
+  [paper name script-filename script-engine jars]
   (let [script (slurp script-filename)
         ds     (hdf5/create-dataset (hdf5/lookup paper "code")
-                                    ds-name script)]
+                                    name script)]
     (hdf5/create-attribute ds "script-engine" script-engine)
     (hdf5/create-attribute ds "jvm-jar-files" (map hdf5/path jars))
     ds))
@@ -83,40 +95,61 @@
         tf  (utility/create-tempfile "ep-" ".jar" data)]
     (cons tf tempfiles)))
 
+(defn- write-arg-file
+  [tempfiles ds]
+  (let [data (hdf5/read ds)
+        tf   (utility/create-tempfile "ep-arg-" ".jar" data)]
+    (cons tf tempfiles)))
+
+(defn- retrieve-arg
+  [program arg]
+  (if (= \tab (first arg))
+    (let [ds-name (subs arg 1)
+          ds      (hdf5/lookup program ds-name)
+          data    (hdf5/read ds)
+          tf      (utility/create-tempfile "ep-arg-" "" data)]
+      [(.getAbsolutePath tf) tf])
+    [arg nil]))
+
+(defn run-program
+  [program]
+  (assert (hdf5/group? program))
+  (let [class-name  (hdf5/read (hdf5/get-attribute program "jvm-main-class"))
+        args        (-> (hdf5/get-attribute program "args")
+                        hdf5/read
+                        pop)
+        args        (map #(retrieve-arg program %) args)
+        temp-files  (filter identity (map second args))
+        args        (map first args)
+        jar-paths   (-> (hdf5/get-attribute program "jvm-jar-files")
+                        hdf5/read)
+        get-ds      (partial hdf5/lookup (hdf5/root program))
+        jars        (map #(-> %
+                              (subs 1)
+                              get-ds
+                              dereference)
+                         jar-paths)
+        jar-files   (reduce write-jar '() jars)
+        temp-files  (concat temp-files jar-files)]
+    (try
+      (let [loader      (new java.net.URLClassLoader
+                             (into-array (map #(.toURL %) jar-files)))
+            init-class  (.loadClass loader class-name)
+            main        (.getDeclaredMethod init-class "main"
+                           (into-array Class [(class (make-array String 0))]))]
+        (. main invoke nil (into-array Object [(into-array String args)])))
+      (finally
+       (dorun (map #(.delete %) temp-files))))))
+
 (defn- write-script
   [ds]
   (let [script (hdf5/read ds)
         _      (assert (string? script))]
-    (utility/create-tempfile "ep-" "" script)))
-
-;; (defn run-program
-;;   [script]
-;;   (let [class-name   (first (hdf5/read-attribute script "jvm-main-class"))
-;;         args         (into-array String
-;;                                  (pop (hdf5/read-attribute script "jvm-args")))
-;;         jars         (map #(dereference (hdf5/retrieve-object-from-ref
-;;                                          (hdf5/lookup script "/") %))
-;;                           (hdf5/read-attribute script "jvm-jar-files"))
-;;         jar-files    (reduce write-jar '() jars)
-;;         script-file  (write-script script)
-;;         temp-files   (cons script-file jar-files)
-;;         args         (map (fn [a]
-;;                             (if (empty? a)
-;;                               (.getAbsolutePath script-file)
-;;                               a))
-;;                           args)]
-;;     (try
-;;       (let [loader      (new java.net.URLClassLoader
-;;                              (into-array (map #(.toURL %) jar-files)))
-;;             init-class  (.loadClass loader class-name)
-;;             main        (.getDeclaredMethod init-class "main"
-;;                            (into-array Class [(class (make-array String 0))]))]
-;;         (. main invoke nil (into-array Object [(into-array String args)])))
-;;       (finally
-;;        (dorun (map #(.delete %) temp-files))))))
+    (utility/create-tempfile "ep-script-" "" script)))
 
 (defn run-script
   [script]
+  (assert (hdf5/node? script))
   (let [engine-name (hdf5/read (hdf5/get-attribute script "script-engine"))
         script-text (hdf5/read script)
         jar-paths   (-> (hdf5/get-attribute script "jvm-jar-files")
@@ -131,7 +164,7 @@
     (try
       (let [loader      (new java.net.URLClassLoader
                              (into-array java.net.URL
-                                         (map #(.toURL %) jar-files)))
+                                         (map #(.toURL (.toURI %)) jar-files)))
             manager     (new javax.script.ScriptEngineManager loader)
             engine      (.getEngineByName manager engine-name)]
         (.eval engine script-text))
