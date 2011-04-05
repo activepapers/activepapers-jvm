@@ -253,7 +253,7 @@
 (defn create-group
   [parent name]
   (assert (group? parent))
-  (. (:accessor parent) createGroup name)
+  (. (:accessor parent) createGroup (path-concat (:path parent) name))
   (lookup parent name))
 
 ; Datasets
