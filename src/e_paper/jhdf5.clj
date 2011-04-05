@@ -1,5 +1,6 @@
 (ns e-paper.jhdf5
-  (:refer-clojure :exclude [read]))
+  (:refer-clojure :exclude [read])
+  (:require clojure.string))
 
 ; Record definitions
 
@@ -297,39 +298,47 @@
     (.writeOpaqueByteArray acc full-path (:tag data) (:data data))
     (new hdf-node acc full-path)))
 
-(defmethod create-dataset java.lang.String
-  [parent name data]
-  (let [acc       (:accessor parent)
-        path      (:path parent)
-        full-path (path-concat path name)]
-    (.writeString acc full-path data)
-    (new hdf-node acc full-path)))
+(defmacro ^{:private true} create-dataset-method
+  [datatype scalar-method-name
+   array-method-name array-element-type array-type]
+  `(do
+     (defmethod ~'create-dataset ~datatype
+       [~'parent ~'name ~'data]
+       (let [~'acc       (:accessor ~'parent)
+             ~'path      (:path ~'parent)
+             ~'full-path (path-concat ~'path ~'name)]
+         (~scalar-method-name ~'acc ~'full-path ~'data)
+         (new ~'hdf-node ~'acc ~'full-path)))
+     (defmethod ~'create-array-dataset ~datatype
+       [~'parent ~'name ~'data]
+       (let [~'acc       (:accessor ~'parent)
+             ~'path      (:path ~'parent)
+             ~'full-path (path-concat ~'path ~'name)]
+         (~array-method-name ~'acc ~'full-path
+                             (into-array ~array-element-type ~'data))
+         (new ~'hdf-node ~'acc ~'full-path)))
+     (defmethod ~'create-dataset ~array-type
+       [~'parent ~'name ~'data]
+       (let [~'acc       (:accessor ~'parent)
+             ~'path      (:path ~'parent)
+             ~'full-path (path-concat ~'path ~'name)]
+         (~array-method-name ~'acc ~'full-path ~'data)
+         (new ~'hdf-node ~'acc ~'full-path)))))
 
-(defmethod create-array-dataset java.lang.String
-  [parent name data]
-  (let [acc       (:accessor parent)
-        path      (:path parent)
-        full-path (path-concat path name)]
-    (.writeStringArray acc full-path (into-array String data))
-    (new hdf-node acc full-path)))
-
-(defmethod create-dataset java.lang.Integer
-  [parent name data]
-  (let [acc       (:accessor parent)
-        path      (:path parent)
-        full-path (path-concat path name)]
-    (.writeInt acc full-path data)
-    (new hdf-node acc full-path)))
-
-(defmethod create-array-dataset java.lang.Integer
-  [parent name data]
-  (let [acc       (:accessor parent)
-        path      (:path parent)
-        full-path (path-concat path name)]
-    (.writeIntArray acc full-path (into-array Integer/TYPE data))
-    (new hdf-node acc full-path)))
-
-; TODO methods for short, long, float, etc.
+(create-dataset-method
+  Byte .writeByte .writeByteArray Byte/TYPE byte-array-class)
+(create-dataset-method
+  Short .writeShort .writeShortArray Short/TYPE short-array-class)
+(create-dataset-method
+  Integer .writeInt .writeIntArray Integer/TYPE int-array-class)
+(create-dataset-method
+  Long .writeLong .writeLongArray Long/TYPE long-array-class)
+(create-dataset-method
+  Float .writeFloat .writeFloatArray Float/TYPE float-array-class)
+(create-dataset-method
+  Double .writeDouble .writeDoubleArray Double/TYPE double-array-class)
+(create-dataset-method
+  String .writeString .writeStringArray String string-array-class)
 
 (defn- read-scalar-dataset
   [acc path dtclass]
