@@ -1,19 +1,45 @@
 (ns e-paper.jhdf5
   (:refer-clojure :exclude [read]))
 
-; A node is defined by its file and its path inside that file
+; Record definitions
 
+; A node is defined by its reader/writerand its path inside that file.
 (defrecord hdf-node
   [accessor path])
 
+; An attribute is defined by its node and its name.
 (defrecord hdf-attribute
   [accessor path attrname])
 
+; Private utility definitions 
+(defn- absolute-path?
+  [path]
+  (= (first path) \/))
+
 (defn- path-concat
   [abs-path rel-path]
+  (assert (not (absolute-path? rel-path)))
   (if (= abs-path "/")
     (str "/" rel-path)
     (str abs-path "/" rel-path)))
+
+(def ^{:private true} byte-array-class
+     (class (make-array Byte/TYPE 0)))
+(def ^{:private true} short-array-class
+     (class (make-array Short/TYPE 0)))
+(def ^{:private true} int-array-class
+     (class (make-array Integer/TYPE 0)))
+(def ^{:private true} long-array-class
+     (class (make-array Long/TYPE 0)))
+(def ^{:private true} float-array-class
+     (class (make-array Float/TYPE 0)))
+(def ^{:private true} double-array-class
+     (class (make-array Double/TYPE 0)))
+(def ^{:private true} string-array-class
+     (class (make-array java.lang.String 0)))
+
+(def ^{:private true} integer-array-class
+     (class (make-array Integer 0)))
 
 ; Type checks
 
@@ -75,8 +101,8 @@
   (let [acc  (:accessor object)
         path (:path object)]
     (if (dataset? object)
-      (. (. acc getDataSetInformation path) getTypeInformation)
-      (. acc getAttributeInformation path (:attrname object)))))
+      (.getTypeInformation (.getDataSetInformation acc path))
+      (.getAttributeInformation acc path (:attrname object)))))
 
 ; Reading datasets and attributes
 
@@ -107,6 +133,11 @@
                "/"
                (clojure.string/join "/" parent-path)))))))
 
+(defn root
+  [node]
+  (assert (node? node))
+  (new hdf-node (:accessor node) "/"))
+
 (defn attributes
   [node]
   (assert (node? node))
@@ -116,7 +147,7 @@
     (into {} (for [n names]
                [n (new hdf-attribute acc path n)]))))
 
-(defn lookup-attribute
+(defn get-attribute
   [node name]
   (assert (node? node))
   (let [acc  (:accessor node)
@@ -124,6 +155,32 @@
     (if (. acc hasAttribute path name)
       (new hdf-attribute acc path name)
       nil)))
+
+(defn- read-scalar-attribute
+  [acc path name dclass]
+  (cond
+   (= dclass ch.systemsx.cisd.hdf5.HDF5DataClass/STRING)
+      (. acc getStringAttribute path name)
+   (= dclass ch.systemsx.cisd.hdf5.HDF5DataClass/INTEGER)
+      (. acc getLongAttribute path name)
+   (= dclass ch.systemsx.cisd.hdf5.HDF5DataClass/FLOAT)
+      (. acc getDoubleAttribute path name)
+   (= dclass ch.systemsx.cisd.hdf5.HDF5DataClass/REFERENCE)
+      (new hdf-node acc  (. acc getObjectReferenceAttribute path name))
+   :else
+      nil))
+
+(defn- read-array-attribute
+  [acc path name dclass]
+  (cond
+   (= dclass ch.systemsx.cisd.hdf5.HDF5DataClass/STRING)
+      (vec (. acc getStringArrayAttribute path name))
+   (= dclass ch.systemsx.cisd.hdf5.HDF5DataClass/INTEGER)
+      (vec (. acc getLongArrayAttribute path name))
+   (= dclass ch.systemsx.cisd.hdf5.HDF5DataClass/FLOAT)
+      (vec (. acc getDoubleArrayAttribute path name))
+   :else
+      nil))
 
 (defmethod read hdf-attribute
   [attr]
@@ -134,18 +191,47 @@
         dclass (. dt getDataClass)
         ddims  (vec (. dt getDimensions))]
     (cond
-       (= dclass ch.systemsx.cisd.hdf5.HDF5DataClass/STRING)
-          (. acc getStringAttribute path name)
-       (= dclass ch.systemsx.cisd.hdf5.HDF5DataClass/INTEGER)
-          (. acc getLongAttribute path name)
-       (= dclass ch.systemsx.cisd.hdf5.HDF5DataClass/FLOAT)
-          (. acc getDoubleAttribute path name)
-       :else
-          nil)))
+     (not (.isArrayType dt))
+        (read-scalar-attribute acc path name dclass)
+     (> (count ddims) 1)
+        (throw (Exception. "attributes with rank > 1 not implemented yet"))
+     :else
+         (read-array-attribute acc path name dclass))))
+
+(defmulti create-attribute (fn [node name value] (class value)))
+
+(defmacro ^{:private true} create-attribute-method
+  [datatype method-name]
+  `(defmethod ~'create-attribute ~datatype
+     [~'node ~'name ~'value]
+     (let [~'acc  (:accessor ~'node)
+           ~'path (:path ~'node)]
+       (~method-name ~'acc ~'path ~'name ~'value)
+       (new ~'hdf-attribute ~'acc ~'path ~'name))))
+
+(create-attribute-method java.lang.String .setStringAttribute)
+(create-attribute-method string-array-class .setStringArrayAttribute)
+(create-attribute-method java.lang.Integer .setIntAttribute)
+(create-attribute-method int-array-class .setIntArrayAttribute)
+(create-attribute-method integer-array-class .setIntArrayAttribute)
+
+(defmethod create-attribute clojure.lang.Sequential
+  [node name value]
+  (let [el-class (get {Boolean Boolean/TYPE
+                       Byte    Byte/TYPE
+                       Short   Short/TYPE
+                       Integer Integer/TYPE
+                       Long    Long/TYPE
+                       Float   Float/TYPE
+                       Double  Double/TYPE} (class (first value)))]
+    (create-attribute node name
+                      (if el-class
+                        (into-array el-class value)
+                        (into-array value)))))
 
 ; Groups
 
-(defn children
+(defn members
   [group]
   (assert (group? group))
   (into {}
@@ -193,41 +279,102 @@
 (defmulti create-dataset
   (fn [parent name data] (type data)))
 
+(defmulti ^{:private true} create-array-dataset
+  (fn [parent name data] (type (first data))))
+
+(defmethod create-dataset clojure.lang.Sequential
+  [parent name data]
+  (create-array-dataset parent name data))
+
+(defmethod create-dataset clojure.lang.IPersistentMap
+  [parent name data]
+  (assert (and (= (set (keys data)) (set [:tag :data]))
+               (string? (:tag data))
+               (= (class (:data data)) byte-array-class)))
+  (let [acc       (:accessor parent)
+        path      (:path parent)
+        full-path (path-concat path name)]
+    (.writeOpaqueByteArray acc full-path (:tag data) (:data data))
+    (new hdf-node acc full-path)))
+
 (defmethod create-dataset java.lang.String
   [parent name data]
-  (. (:accessor parent) writeString
-     (path-concat (:path parent) name)
-     data
-     (inc (count data))))
+  (let [acc       (:accessor parent)
+        path      (:path parent)
+        full-path (path-concat path name)]
+    (.writeString acc full-path data)
+    (new hdf-node acc full-path)))
 
-;(defmethod read hdf-node
-;  [dataset]
-;  (assert (dataset? dataset))
-;  (. (:accessor dataset) getDataSetInformation (:path dataset)))
+(defmethod create-array-dataset java.lang.String
+  [parent name data]
+  (let [acc       (:accessor parent)
+        path      (:path parent)
+        full-path (path-concat path name)]
+    (.writeStringArray acc full-path (into-array String data))
+    (new hdf-node acc full-path)))
 
-; Special-case treatment for opaque data.
-; The HDF Object layer doesn't handle opaque data, so this needs
-; to be done in low-level code.
-(defn create-opaque-dataset
-  [parent name tag data]
-  )
+(defmethod create-dataset java.lang.Integer
+  [parent name data]
+  (let [acc       (:accessor parent)
+        path      (:path parent)
+        full-path (path-concat path name)]
+    (.writeInt acc full-path data)
+    (new hdf-node acc full-path)))
 
-(defn opaque-tag
-  "Return the tag of an opaque dataset."
-  [opaque-ds]
-  )
+(defmethod create-array-dataset java.lang.Integer
+  [parent name data]
+  (let [acc       (:accessor parent)
+        path      (:path parent)
+        full-path (path-concat path name)]
+    (.writeIntArray acc full-path (into-array Integer/TYPE data))
+    (new hdf-node acc full-path)))
 
-(defn read-opaque-data
-  "Read an opaque dataset into a bytestream."
-  [opaque-ds]
-  )
+; TODO methods for short, long, float, etc.
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn- read-scalar-dataset
+  [acc path dtclass]
+  (cond
+   (= dtclass ch.systemsx.cisd.hdf5.HDF5DataClass/STRING)
+      (. acc readString path)
+   (= dtclass ch.systemsx.cisd.hdf5.HDF5DataClass/INTEGER)
+      (. acc readLong path)
+   (= dtclass ch.systemsx.cisd.hdf5.HDF5DataClass/FLOAT)
+      (. acc readDouble path)
+   :else
+      nil))
 
-(def hfile (open "/Users/hinsen/projects/sputnik/data_model/examples/test.h5"))
-(def conf (lookup hfile "conf"))
+(defn- read-array-dataset
+  [acc path dtclass]
+  (cond
+   (= dtclass ch.systemsx.cisd.hdf5.HDF5DataClass/STRING)
+      (vec (. acc readStringArray path))
+   (= dtclass ch.systemsx.cisd.hdf5.HDF5DataClass/INTEGER)
+      (vec (. acc readLongArray path))
+   (= dtclass ch.systemsx.cisd.hdf5.HDF5DataClass/FLOAT)
+      (vec (. acc readDoubleArray path))
+   (= dtclass ch.systemsx.cisd.hdf5.HDF5DataClass/OPAQUE)
+      {:tag  (. acc tryGetOpaqueTag path)
+       :data (. acc readAsByteArray path)}
+   :else
+      nil))
 
-(read (lookup-attribute conf "DATA_MODEL"))
-
-(close hfile)
-
+(defmethod read hdf-node
+  [ds]
+  (assert (dataset? ds))
+  (let [acc     (:accessor ds)
+        path    (:path ds)
+        dsinfo  (.getDataSetInformation acc path)
+        dims    (vec (.getDimensions dsinfo))
+        dt      (datatype ds)
+        dtclass (.getDataClass dt)
+        dtdims  (if (.isArrayType dt)
+                  (vec (.getDimensions dt))
+                  [])
+        rank    (+ (count dims) (count dtdims))]
+    (cond
+     (= rank 0)
+        (read-scalar-dataset acc path dtclass)
+     (= rank 1)
+        (read-array-dataset acc path dtclass)
+     :else
+        (throw (Exception. "datasets with rank > 1 not implemented yet")))))
