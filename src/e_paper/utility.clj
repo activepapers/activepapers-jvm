@@ -2,9 +2,9 @@
 
 (defn read-file
   "Read the contents of a file into a byte array"
-  [filename]
-  (let [file   (new java.io.File filename)
-        size   (.  file length)
+  [file]
+  (assert (isa? (class file) java.io.File))
+  (let [size   (.  file length)
         stream (new java.io.FileInputStream file)
         buffer (byte-array size)]
     (. stream read buffer)

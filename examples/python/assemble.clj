@@ -1,13 +1,12 @@
 (ns python.assemble-paper
   (:require [e-paper.storage :as ep])
-  (:require [e-paper.jhdf5 :as hdf5]))
+  (:require [e-paper.jhdf5 :as hdf5])
+  (:import java.io.File))
 
-(def cwd "/Users/hinsen/projects/e-paper/examples/python/")
+(def dir (File. "/Users/hinsen/projects/e-paper/examples/python/"))
 
-(def paper (ep/create (str cwd "python_paper.h5")))
-;; (def jython-jar (ep/store-jar paper "jython"
-;;                               (str cwd "code/jython-2.5.2.jar")))
+(def paper (ep/create (File. dir "python_paper.h5")))
 (def jython-jar (ep/store-code-reference paper "jython" "jython" "jython"))
-(def script (ep/store-script paper "hello" (str cwd "code/hello.py")
+(def script (ep/store-script paper "hello" (File. dir "code/hello.py")
                              "python" [jython-jar]))
 (ep/close paper)

@@ -1,8 +1,9 @@
 (ns e-paper.make-library
-  (:require [e-paper.storage :as ep]))
+  (:require [e-paper.storage :as ep])
+  (:import java.io.File))
 
-(def cwd (try @(ns-resolve 'cake '*pwd*)
-              (catch Exception e (System/getProperty "user.dir"))))
+(def cwd (try (File. (deref (ns-resolve 'cake '*pwd*)))
+              (catch Exception e nil)))
 
 (defn parse-jar-spec
   [jar-spec]
@@ -15,7 +16,7 @@
 
 (let [[library-file & jar-specs] *command-line-args*
       jar-specs (map parse-jar-spec jar-specs)
-      library (ep/create (str cwd "/" library-file))]
+      library (ep/create (File. cwd library-file))]
   (doseq [[ds-name jar-file] jar-specs]
-    (ep/store-jar library ds-name (str cwd "/" jar-file)))
+    (ep/store-jar library ds-name (File. cwd jar-file)))
   (ep/close library))

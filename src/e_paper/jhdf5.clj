@@ -1,6 +1,7 @@
 (ns e-paper.jhdf5
   (:refer-clojure :exclude [read])
-  (:require clojure.string))
+  (:require clojure.string)
+  (:import java.io.File))
 
 ; Record definitions
 
@@ -71,10 +72,10 @@
 ; The return value of open/create is the root group object.
 
 (defn open
-  ([filename] (open filename :read-only))
-  ([filename mode]
-     (let [factory (ch.systemsx.cisd.hdf5.HDF5FactoryProvider/get)
-           file (new java.io.File filename)]
+  ([file] (open file :read-only))
+  ([file mode]
+     (assert (isa? (class file) java.io.File))
+     (let [factory (ch.systemsx.cisd.hdf5.HDF5FactoryProvider/get)]
        (new hdf-node
             (case mode
                   :read-only   (. factory openForReading file)
@@ -85,8 +86,8 @@
             "/"))))
 
 (defn create
-  [filename]
-  (open filename :create))
+  [file]
+  (open file :create))
 
 (defn close
   [root-group]

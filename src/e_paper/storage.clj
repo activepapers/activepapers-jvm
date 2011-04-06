@@ -1,14 +1,16 @@
 (ns e-paper.storage
   (:require [e-paper.jhdf5 :as hdf5])
-  (:require [e-paper.utility :as utility]))
+  (:require [e-paper.utility :as utility])
+  (:import java.io.File))
 
 ; This information should be taken from an environment variable or
 ; a configuration file!
-(def *e-paper-library* "/Users/hinsen/projects/e-paper/e-paper-library")
+(def *e-paper-library* (File. "/Users/hinsen/projects/e-paper/e-paper-library"))
 
 (defn create
-  [filename]
-  (let [root (hdf5/create filename)]
+  [file]
+  (assert (isa? (class file) java.io.File))
+  (let [root (hdf5/create file)]
     (hdf5/create-attribute root "DATA_MODEL" "e-paper")
     (hdf5/create-attribute root "DATA_MODEL_MAJOR_VERSION" 0)
     (hdf5/create-attribute root "DATA_MODEL_MINOR_VERSION" 1)
@@ -22,10 +24,11 @@
 (def close hdf5/close)
 
 (defn store-jar
-  [paper ds-name jar-filename]
+  [paper ds-name jar-file]
+  (assert (isa? (class jar-file) java.io.File))
   (let [code (hdf5/lookup paper "code")]
     (hdf5/create-dataset
-       code ds-name {:tag "jar" :data (utility/read-file jar-filename)})))
+       code ds-name {:tag "jar" :data (utility/read-file jar-file)})))
 
 (defn store-code-reference
   [paper ds-name library path]
@@ -60,8 +63,9 @@
     program))
     
 (defn store-script
-  [paper name script-filename script-engine jars]
-  (let [script (slurp script-filename)
+  [paper name script-file script-engine jars]
+  (assert (isa? (class script-file) java.io.File))
+  (let [script (slurp script-file)
         ds     (hdf5/create-dataset (hdf5/lookup paper "code")
                                     name script)]
     (hdf5/create-attribute ds "script-engine" script-engine)
@@ -79,7 +83,7 @@
   [ds]
   (if (reference? ds)
     (let [[library code-path] (hdf5/read ds)
-          library             (str *e-paper-library* "/" library ".h5")
+          library             (File. *e-paper-library* (str library ".h5"))
           path                (str "code/" code-path)]
       (hdf5/lookup (hdf5/open library) path))
     ds))
