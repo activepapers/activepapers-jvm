@@ -1,6 +1,7 @@
 (ns e-paper.storage
   (:require [e-paper.jhdf5 :as hdf5])
   (:require [e-paper.utility :as utility])
+  (:require [e-paper.security :as security])
   (:import java.io.File))
 
 ; This information should be taken from an environment variable or
@@ -154,23 +155,25 @@
 (defn run-script
   [script]
   (assert (hdf5/node? script))
-  (let [engine-name (hdf5/read (hdf5/get-attribute script "script-engine"))
-        script-text (hdf5/read script)
-        jar-paths   (-> (hdf5/get-attribute script "jvm-jar-files")
-                        hdf5/read)
-        get-ds      (partial hdf5/lookup (hdf5/root script))
-        jars        (map #(-> %
-                              (subs 1)
-                              get-ds
-                              dereference)
-                         jar-paths)
-        jar-files   (reduce write-jar '() jars)]
-    (try
-      (let [loader      (new java.net.URLClassLoader
-                             (into-array java.net.URL
-                                         (map #(.toURL (.toURI %)) jar-files)))
-            manager     (new javax.script.ScriptEngineManager loader)
-            engine      (.getEngineByName manager engine-name)]
-        (.eval engine script-text))
-      (finally
-       (dorun (map #(.delete %) jar-files))))))
+  (security/with-full-permissions
+    (let [engine-name (hdf5/read (hdf5/get-attribute script "script-engine"))
+          script-text (hdf5/read script)
+          jar-paths   (-> (hdf5/get-attribute script "jvm-jar-files")
+                          hdf5/read)
+          get-ds      (partial hdf5/lookup (hdf5/root script))
+          jars        (map #(-> %
+                                (subs 1)
+                                get-ds
+                                dereference)
+                           jar-paths)
+          jar-files   (reduce write-jar '() jars)]
+      (try
+        (let [loader      (new java.net.URLClassLoader
+                               (into-array java.net.URL
+                                           (map #(.toURL (.toURI %)) jar-files)))
+              manager     (new javax.script.ScriptEngineManager loader)
+              engine      (.getEngineByName manager engine-name)]
+          (security/with-restricted-permissions
+            (.eval engine script-text)))
+        (finally
+         (dorun (map #(.delete %) jar-files)))))))
