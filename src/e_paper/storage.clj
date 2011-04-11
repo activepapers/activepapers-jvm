@@ -1,5 +1,5 @@
 (ns e-paper.storage
-  (:require [e-paper.jhdf5 :as hdf5])
+  (:require [clj-hdf5.core :as hdf5])
   (:require [e-paper.utility :as utility])
   (:require [e-paper.security :as security])
   (:import java.io.File))

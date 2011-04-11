@@ -1,6 +1,5 @@
 (ns clojure-prog.assemble
   (:require [e-paper.storage :as ep])
-  (:require [e-paper.jhdf5 :as hdf5])
   (:require [e-paper.utility :as utility])
   (:import java.io.File))
 
