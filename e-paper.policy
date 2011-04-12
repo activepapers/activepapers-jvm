@@ -1,4 +1,4 @@
-/* AUTOMATICALLY GENERATED ON Thu Apr 07 18:37:20 CEST 2011*/
+/* AUTOMATICALLY GENERATED ON Tue Apr 12 10:16:57 CEST 2011*/
 /* DO NOT EDIT */
 
 grant {
@@ -11,5 +11,6 @@ grant {
   permission java.lang.RuntimePermission "createClassLoader";
   permission java.lang.RuntimePermission "getProtectionDomain";
   permission java.io.FilePermission "<<ALL FILES>>", "write";
+  permission java.util.PropertyPermission "*", "read";
 };
 

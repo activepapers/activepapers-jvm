@@ -31,10 +31,28 @@
     (hdf5/create-dataset
        code ds-name {:tag "jar" :data (utility/read-file jar-file)})))
 
+;
+; References
+;
+(defn reference?
+  [ds]
+  (when-let [attr (hdf5/get-attribute ds "e-paper-datatype")]
+    (= (hdf5/read attr) "reference")))
+
+; TODO error checking
+; TODO will the library file ever be closed?
+(defn dereference
+  [ds]
+  (if (reference? ds)
+    (let [[library path] (hdf5/read ds)
+          library        (File. *e-paper-library* (str library ".h5"))]
+      (hdf5/lookup (hdf5/open library) path))
+    ds))
+
 (defn store-code-reference
   [paper ds-name library path]
   (let [code (hdf5/lookup paper "code")
-        ds   (hdf5/create-dataset code ds-name [library path])]
+        ds   (hdf5/create-dataset code ds-name [library (str "code/" path)])]
     (hdf5/create-attribute ds "e-paper-datatype" "reference")
     ds))
 
@@ -73,25 +91,13 @@
     (hdf5/create-attribute ds "jvm-jar-files" (map hdf5/path jars))
     ds))
 
-(defn reference?
-  [ds]
-  (when-let [attr (hdf5/get-attribute ds "e-paper-datatype")]
-    (= (hdf5/read attr) "reference")))
-
-; TODO error checking
-; TODO will the library file ever be closed?
-(defn dereference
-  [ds]
-  (if (reference? ds)
-    (let [[library code-path] (hdf5/read ds)
-          library             (File. *e-paper-library* (str library ".h5"))
-          path                (str "code/" code-path)]
-      (hdf5/lookup (hdf5/open library) path))
-    ds))
-
 (defn get-program
   [paper name]
   (dereference (hdf5/lookup (hdf5/lookup paper "code") name)))
+
+(defn get-data
+  [paper name]
+  (dereference (hdf5/lookup paper (str "data/" name))))
 
 (defn- write-jar
   [tempfiles ds]
@@ -116,19 +122,11 @@
       [(.getAbsolutePath tf) tf])
     [arg nil]))
 
-(defn run-program
-  [program]
-  (assert (hdf5/group? program))
-  (let [class-name  (hdf5/read (hdf5/get-attribute program "jvm-main-class"))
-        args        (-> (hdf5/get-attribute program "args")
-                        hdf5/read
-                        pop)
-        args        (map #(retrieve-arg program %) args)
-        temp-files  (filter identity (map second args))
-        args        (map first args)
-        jar-paths   (-> (hdf5/get-attribute program "jvm-jar-files")
+(defn- run-code
+  [code temp-files exec]
+  (let [jar-paths   (-> (hdf5/get-attribute code "jvm-jar-files")
                         hdf5/read)
-        get-ds      (partial hdf5/lookup (hdf5/root program))
+        get-ds      (partial hdf5/lookup (hdf5/root code))
         jars        (map #(-> %
                               (subs 1)
                               get-ds
@@ -138,13 +136,31 @@
         temp-files  (concat temp-files jar-files)]
     (try
       (let [loader      (new java.net.URLClassLoader
-                             (into-array (map #(.toURL %) jar-files)))
-            init-class  (.loadClass loader class-name)
-            main        (.getDeclaredMethod init-class "main"
-                           (into-array Class [(class (make-array String 0))]))]
-        (. main invoke nil (into-array Object [(into-array String args)])))
+                             (into-array (map #(.toURL %) jar-files)))]
+        (exec loader))
       (finally
        (dorun (map #(.delete %) temp-files))))))
+
+(defn run-program
+  [program]
+  (assert (hdf5/group? program))
+  (security/with-full-permissions
+    (let [class-name  (hdf5/read (hdf5/get-attribute program "jvm-main-class"))
+          args        (-> (hdf5/get-attribute program "args")
+                          hdf5/read
+                          pop)
+          args        (map #(retrieve-arg program %) args)
+          temp-files  (filter identity (map second args))
+          args        (map first args)
+          arg-array   (into-array Object [(into-array String args)])
+          empty-array (into-array Class [(class (make-array String 0))])]
+      (run-code program temp-files
+                (fn [loader]
+                  (let [init-class  (.loadClass loader class-name)
+                        main        (.getDeclaredMethod init-class "main"
+                                                        empty-array)]
+                    (security/with-restricted-permissions
+                      (. main invoke nil arg-array))))))))
 
 (defn- write-script
   [ds]
@@ -157,23 +173,10 @@
   (assert (hdf5/node? script))
   (security/with-full-permissions
     (let [engine-name (hdf5/read (hdf5/get-attribute script "script-engine"))
-          script-text (hdf5/read script)
-          jar-paths   (-> (hdf5/get-attribute script "jvm-jar-files")
-                          hdf5/read)
-          get-ds      (partial hdf5/lookup (hdf5/root script))
-          jars        (map #(-> %
-                                (subs 1)
-                                get-ds
-                                dereference)
-                           jar-paths)
-          jar-files   (reduce write-jar '() jars)]
-      (try
-        (let [loader      (new java.net.URLClassLoader
-                               (into-array java.net.URL
-                                           (map #(.toURL (.toURI %)) jar-files)))
-              manager     (new javax.script.ScriptEngineManager loader)
-              engine      (.getEngineByName manager engine-name)]
-          (security/with-restricted-permissions
-            (.eval engine script-text)))
-        (finally
-         (dorun (map #(.delete %) jar-files)))))))
+          script-text (hdf5/read script)]
+      (run-code script '()
+                (fn [loader]
+                  (let [manager     (javax.script.ScriptEngineManager. loader)
+                        engine      (.getEngineByName manager engine-name)]
+                    (security/with-restricted-permissions
+                      (.eval engine script-text))))))))

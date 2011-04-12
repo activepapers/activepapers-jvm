@@ -23,18 +23,3 @@
           (.write stream data 0 (count data)))))
     file))
 
-
-;; (defn create-tempfile
-;;   "Create a temporary file."
-;;   [prefix suffix bytes]
-;;   (let [file   (java.io.File/createTempFile prefix suffix)]
-;;     (with-open [stream (clojure.java.io/output-stream file)]
-;;       (.write stream bytes 0 (count bytes)))
-;;     file))
-
-;; (defn create-tempfile
-;;   "Create a temporary file."
-;;   [prefix suffix string]
-;;   (let [file   (java.io.File/createTempFile prefix suffix)]
-    
-;;     file))
