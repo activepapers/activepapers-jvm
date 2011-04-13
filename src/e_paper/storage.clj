@@ -2,7 +2,8 @@
   (:require [clj-hdf5.core :as hdf5])
   (:require [e-paper.utility :as utility])
   (:require [e-paper.security :as security])
-  (:import java.io.File))
+  (:import java.io.File)
+  (:import ExecutablePaperRef))
 
 ; This information should be taken from an environment variable or
 ; a configuration file!
@@ -91,13 +92,16 @@
     (hdf5/create-attribute ds "jvm-jar-files" (map hdf5/path jars))
     ds))
 
-(defn get-program
-  [paper name]
-  (dereference (hdf5/lookup (hdf5/lookup paper "code") name)))
-
 (defn get-data
   [paper name]
   (dereference (hdf5/lookup paper (str "data/" name))))
+
+;
+; Run code from a paper
+;
+(defn get-program
+  [paper name]
+  (dereference (hdf5/lookup (hdf5/lookup paper "code") name)))
 
 (defn- write-jar
   [tempfiles ds]
@@ -112,6 +116,12 @@
         tf   (utility/create-tempfile "ep-arg-" ".jar" data)]
     (cons tf tempfiles)))
 
+(defn- write-script
+  [ds]
+  (let [script (hdf5/read ds)
+        _      (assert (string? script))]
+    (utility/create-tempfile "ep-script-" "" script)))
+
 (defn- retrieve-arg
   [program arg]
   (if (= \tab (first arg))
@@ -121,6 +131,46 @@
           tf      (utility/create-tempfile "ep-arg-" "" data)]
       [(.getAbsolutePath tf) tf])
     [arg nil]))
+
+;; (defn- class-loader
+;;   [jar-files]
+;;   (java.net.URLClassLoader.
+;;    (into-array (map #(.toURL %) jar-files))))
+
+(defn- starts-with
+  [string prefix]
+  (let [c (count prefix)]
+    (and (>= (count string) c)
+         (= prefix (subs string 0 c)))))
+
+(defn- class-loader
+  [jar-files]
+  (let [app-cl    (.getClassLoader clojure.lang.RT)
+        runtime   (File. *e-paper-library* "e-paper-runtime.jar")
+        jar-files (conj jar-files runtime)
+        paper-cl  (proxy [java.net.URLClassLoader]
+                      [(into-array (map #(.toURL %) jar-files))
+                       (.getParent app-cl)]
+                    (findClass
+                     [name]
+;                    (prn "findClass:" name)
+                     (if (some (partial starts-with name)
+                               ["ch.systemsx.cisd.hdf5."
+                                "ncsa.hdf."
+                                "ExecutablePaperRef"])
+                       (do
+ ;                       (prn "--> app-loader for " name)
+                         (.loadClass app-cl name))
+                       (proxy-super findClass name)))
+                    ;; (loadClass
+                    ;;  ([name]
+                    ;;      (prn "loadClass:" name)
+                    ;;      (proxy-super loadClass name))
+                    ;;  ([name resolve]
+                    ;;     (prn "loadClass:" name resolve)
+                    ;;     (proxy-super loadClass name resolve)))
+                    )]
+    paper-cl))
 
 (defn- run-code
   [code temp-files exec]
@@ -135,9 +185,15 @@
         jar-files   (reduce write-jar '() jars)
         temp-files  (concat temp-files jar-files)]
     (try
-      (let [loader      (new java.net.URLClassLoader
-                             (into-array (map #(.toURL %) jar-files)))]
-        (exec loader))
+      (let [cl  (class-loader jar-files)
+            ccl (.getContextClassLoader (Thread/currentThread))]
+        (try
+          (.setContextClassLoader (Thread/currentThread) cl)
+          (ExecutablePaperRef/setAccessors (:accessor code) nil)
+          (exec cl)
+          (finally
+           (ExecutablePaperRef/setAccessors nil nil)
+           (.setContextClassLoader (Thread/currentThread) cl))))
       (finally
        (dorun (map #(.delete %) temp-files))))))
 
@@ -156,17 +212,11 @@
           empty-array (into-array Class [(class (make-array String 0))])]
       (run-code program temp-files
                 (fn [loader]
-                  (let [init-class  (.loadClass loader class-name)
-                        main        (.getDeclaredMethod init-class "main"
-                                                        empty-array)]
+                  (let [init-class (.loadClass loader class-name)
+                        main       (.getDeclaredMethod init-class "main"
+                                                       empty-array)]
                     (security/with-restricted-permissions
                       (. main invoke nil arg-array))))))))
-
-(defn- write-script
-  [ds]
-  (let [script (hdf5/read ds)
-        _      (assert (string? script))]
-    (utility/create-tempfile "ep-script-" "" script)))
 
 (defn run-script
   [script]

@@ -3,6 +3,7 @@ syntax: glob
 *~
 **.jar
 **.h5
+**.class
 .cake
 .eshell-bufname
 .gitignore
@@ -10,5 +11,6 @@ build
 classes
 lib
 tools
+jars
 pom.xml
 test
