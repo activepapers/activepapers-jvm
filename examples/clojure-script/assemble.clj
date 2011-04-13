@@ -5,14 +5,17 @@
 (def dir (File. "/Users/hinsen/projects/e-paper/examples/clojure-script/"))
 
 (def paper (ep/create (File. dir "clojure_paper.h5")))
-(def clojure-jar (ep/store-code-reference paper
-                           "clojure" "clojure" "clojure"))
-(def contrib-jar (ep/store-code-reference paper
-                           "clojure-contrib" "clojure" "clojure-contrib"))
-(def scripting-jar (ep/store-code-reference paper
-                           "clojure-scripting" "clojure" "clojure-scripting"))
-(def script (ep/store-script paper "hello"
-                             (File. dir "code/hello.clj")
-                             "Clojure"
-                              [clojure-jar contrib-jar scripting-jar]))
+
+(def jars (ep/store-library-references paper "clojure"))
+
+(ep/store-script paper "generate-input"
+                 (File. dir "code/generate_input.clj")
+                 "Clojure" jars)
+(ep/run-script (ep/get-code paper "generate-input"))
+
+(ep/store-script paper "calc-sine"
+                 (File. dir "code/calc_sine.clj")
+                 "Clojure" jars)
+(ep/run-script (ep/get-code paper "calc-sine"))
+
 (ep/close paper)

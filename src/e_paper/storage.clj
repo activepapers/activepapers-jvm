@@ -40,22 +40,43 @@
   (when-let [attr (hdf5/get-attribute ds "e-paper-datatype")]
     (= (hdf5/read attr) "reference")))
 
+(defn library-file
+  [library-name]
+  (File. *e-paper-library* (str library-name ".h5")))
+
 ; TODO error checking
 ; TODO will the library file ever be closed?
 (defn dereference
   [ds]
   (if (reference? ds)
     (let [[library path] (hdf5/read ds)
-          library        (File. *e-paper-library* (str library ".h5"))]
+          library        (library-file library)]
       (hdf5/lookup (hdf5/open library) path))
     ds))
 
+(defn reference-exists?
+  [library path]
+  (let [file (library-file library)]
+    (if (.exists file)
+      (hdf5/node? (hdf5/lookup (hdf5/open file) path))
+      false)))
+
 (defn store-code-reference
   [paper ds-name library path]
-  (let [code (hdf5/lookup paper "code")
-        ds   (hdf5/create-dataset code ds-name [library (str "code/" path)])]
-    (hdf5/create-attribute ds "e-paper-datatype" "reference")
-    ds))
+  (let [path (str "code/" path)]
+    (assert (reference-exists? library path))
+    (let [code (hdf5/lookup paper "code")
+          ds   (hdf5/create-dataset code ds-name [library path])]
+      (hdf5/create-attribute ds "e-paper-datatype" "reference")
+      ds)))
+
+(defn store-library-references
+  [paper library]
+  (let [lib-hdf5   (hdf5/open (library-file library))
+        code-nodes (-> (hdf5/lookup lib-hdf5 "code") hdf5/members keys)]
+    (hdf5/close lib-hdf5)
+    (for [ds-name code-nodes]
+      (store-code-reference paper ds-name library ds-name))))
 
 (defn- process-program-arg
   [program arg number]
@@ -99,7 +120,7 @@
 ;
 ; Run code from a paper
 ;
-(defn get-program
+(defn get-code
   [paper name]
   (dereference (hdf5/lookup (hdf5/lookup paper "code") name)))
 

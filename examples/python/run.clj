@@ -6,7 +6,7 @@
 
 (def paper (ep/open (File. dir "python_paper.h5")))
 
-(def script (ep/get-program paper "hello"))
+(def script (ep/get-code paper "hello"))
 
 (ep/run-script script)
 
