@@ -128,14 +128,10 @@
     (let [ds-name (subs arg 1)
           ds      (hdf5/lookup program ds-name)
           data    (hdf5/read ds)
-          tf      (utility/create-tempfile "ep-arg-" "" data)]
+          name    (last (clojure.string/split ds-name #"/"))
+          tf      (utility/create-tempfile (str "ep-" name "-") "" data)]
       [(.getAbsolutePath tf) tf])
     [arg nil]))
-
-;; (defn- class-loader
-;;   [jar-files]
-;;   (java.net.URLClassLoader.
-;;    (into-array (map #(.toURL %) jar-files))))
 
 (defn- starts-with
   [string prefix]
@@ -189,7 +185,12 @@
             ccl (.getContextClassLoader (Thread/currentThread))]
         (try
           (.setContextClassLoader (Thread/currentThread) cl)
-          (ExecutablePaperRef/setAccessors (:accessor code) nil)
+          (ExecutablePaperRef/setAccessors
+             (:accessor code)
+             (if (isa? (class (:accessor code))
+                       ch.systemsx.cisd.hdf5.IHDF5Writer)
+               (:accessor code)
+               nil))
           (exec cl)
           (finally
            (ExecutablePaperRef/setAccessors nil nil)

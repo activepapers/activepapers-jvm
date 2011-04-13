@@ -1,4 +1,4 @@
-/* AUTOMATICALLY GENERATED ON Tue Apr 12 17:04:33 CEST 2011*/
+/* AUTOMATICALLY GENERATED ON Wed Apr 13 16:40:34 CEST 2011*/
 /* DO NOT EDIT */
 
 grant {
@@ -14,5 +14,6 @@ grant {
   permission java.util.PropertyPermission "*", "read";
   permission java.lang.RuntimePermission "accessClassInPackage.*";
   permission java.lang.RuntimePermission "accessDeclaredMembers";
+  permission java.lang.RuntimePermission "modifyThread";
 };
 
