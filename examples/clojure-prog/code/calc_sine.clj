@@ -1,5 +1,5 @@
 (ns calc-sine
-  (:require [e-paper.data :as data])
+  (:require [e-paper-runtime.data :as data])
   (:require [clj-hdf5.core :as hdf5]))
 
 (let [time      (hdf5/read (data/get-dataset "time"))

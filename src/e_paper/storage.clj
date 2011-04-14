@@ -5,10 +5,19 @@
   (:import java.io.File)
   (:import ExecutablePaperRef))
 
-; This information should be taken from an environment variable or
-; a configuration file!
-(def *e-paper-library* (File. "/Users/hinsen/projects/e-paper/e-paper-library"))
+;
+; Location of the library
+;
+(def *e-paper-library* (File. (System/getenv "EPAPER_LIBRARY")))
 
+(defn library-file
+  "Return a File object for library-name"
+  [library-name]
+  (File. *e-paper-library* (str library-name ".h5")))
+
+;
+; Opening and closing
+;
 (defn create
   [file]
   (assert (isa? (class file) java.io.File))
@@ -25,13 +34,6 @@
 
 (def close hdf5/close)
 
-(defn store-jar
-  [paper ds-name jar-file]
-  (assert (isa? (class jar-file) java.io.File))
-  (let [code (hdf5/lookup paper "code")]
-    (hdf5/create-dataset
-       code ds-name {:tag "jar" :data (utility/read-file jar-file)})))
-
 ;
 ; References
 ;
@@ -40,9 +42,6 @@
   (when-let [attr (hdf5/get-attribute ds "e-paper-datatype")]
     (= (hdf5/read attr) "reference")))
 
-(defn library-file
-  [library-name]
-  (File. *e-paper-library* (str library-name ".h5")))
 
 ; TODO error checking
 ; TODO will the library file ever be closed?
@@ -51,7 +50,7 @@
   (if (reference? ds)
     (let [[library path] (hdf5/read ds)
           library        (library-file library)]
-      (hdf5/lookup (hdf5/open library) path))
+      (recur (hdf5/lookup (hdf5/open library) path)))
     ds))
 
 (defn reference-exists?
@@ -78,6 +77,29 @@
     (for [ds-name code-nodes]
       (store-code-reference paper ds-name library ds-name))))
 
+;
+; Store code in a paper
+;
+(defn store-jar
+  [paper ds-name jar-file]
+  (assert (isa? (class jar-file) java.io.File))
+  (let [code (hdf5/lookup paper "code")]
+    (hdf5/create-dataset
+       code ds-name {:tag "jar" :data (utility/read-file jar-file)})))
+
+(defn store-script
+  "Store the script contained in script-file under name in paper
+   such that it will be run with script-engine and with the jars
+   on the classpath."
+  [paper name script-file script-engine jars]
+  (assert (isa? (class script-file) java.io.File))
+  (let [script (slurp script-file)
+        ds     (hdf5/create-dataset (hdf5/lookup paper "code")
+                                    name script)]
+    (hdf5/create-attribute ds "script-engine" script-engine)
+    (hdf5/create-attribute ds "jvm-jar-files" (map hdf5/path jars))
+    ds))
+
 (defn- process-program-arg
   [program arg number]
   (if (string? arg)
@@ -91,6 +113,10 @@
             (str "\t" ds-name) ))))
 
 (defn store-program
+  "Store a program under name in paper. The program will be run
+   like from the Java command line with args being supplied to
+   method main from the class named by main-class-name, and with
+   the jars on the classpath."
   [paper name jars main-class-name args]
   (let [code    (hdf5/lookup paper "code")
         program (hdf5/create-group code name)
@@ -103,20 +129,6 @@
     (hdf5/create-attribute program "jvm-jar-files" (map hdf5/path jars))
     program))
     
-(defn store-script
-  [paper name script-file script-engine jars]
-  (assert (isa? (class script-file) java.io.File))
-  (let [script (slurp script-file)
-        ds     (hdf5/create-dataset (hdf5/lookup paper "code")
-                                    name script)]
-    (hdf5/create-attribute ds "script-engine" script-engine)
-    (hdf5/create-attribute ds "jvm-jar-files" (map hdf5/path jars))
-    ds))
-
-(defn get-data
-  [paper name]
-  (dereference (hdf5/lookup paper (str "data/" name))))
-
 ;
 ; Run code from a paper
 ;
@@ -170,13 +182,13 @@
                        (.getParent app-cl)]
                     (findClass
                      [name]
-;                    (prn "findClass:" name)
+                     ; (prn "findClass:" name)
                      (if (some (partial starts-with name)
                                ["ch.systemsx.cisd.hdf5."
                                 "ncsa.hdf."
                                 "ExecutablePaperRef"])
                        (do
- ;                       (prn "--> app-loader for " name)
+                         ; (prn "--> app-loader for " name)
                          (.loadClass app-cl name))
                        (proxy-super findClass name)))
                     ;; (loadClass
@@ -248,7 +260,15 @@
           script-text (hdf5/read script)]
       (run-code script '()
                 (fn [loader]
-                  (let [manager     (javax.script.ScriptEngineManager. loader)
-                        engine      (.getEngineByName manager engine-name)]
+                  (let [manager (javax.script.ScriptEngineManager. loader)
+                        engine  (.getEngineByName manager engine-name)]
                     (security/with-restricted-permissions
                       (.eval engine script-text))))))))
+
+;
+; Access to data in the paper
+;
+(defn get-data
+  [paper name]
+  (dereference (hdf5/lookup paper (str "data/" name))))
+

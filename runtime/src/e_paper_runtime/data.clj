@@ -1,7 +1,6 @@
-(ns e-paper.data
+(ns e-paper-runtime.data
   (:require [clj-hdf5.core :as hdf5])
-  (:import ExecutablePaperRef)
-  (:import clj-hdf5.core.hdf-node))
+  (:import ExecutablePaperRef))
 
 (defn- ds-name [name] (str "/data/" name))
 
@@ -10,7 +9,7 @@
   (let [reader (ExecutablePaperRef/getReader)]
     (when (nil? reader)
       (throw (Exception. "no e-paper open")))
-    (new hdf-node reader (ds-name name))))
+    (hdf5/make-hdf-node reader (ds-name name))))
 
 (defn create-dataset
   [name data]
@@ -20,4 +19,4 @@
               (if (nil? (ExecutablePaperRef/getReader))
                 "no e-paper open"
                 "e-paper not writable"))))
-    (hdf5/create-dataset (new hdf-node writer "/data") name data)))
+    (hdf5/create-dataset (hdf5/make-hdf-node writer "/data") name data)))
