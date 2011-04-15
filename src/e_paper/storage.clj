@@ -83,9 +83,10 @@
 (defn store-jar
   [paper ds-name jar-file]
   (assert (isa? (class jar-file) java.io.File))
-  (let [code (hdf5/lookup paper "code")]
-    (hdf5/create-dataset
-       code ds-name {:tag "jar" :data (utility/read-file jar-file)})))
+  (let [code (hdf5/lookup paper "code")
+        ds   (hdf5/create-dataset code ds-name
+                 {:tag "jar" :data (utility/read-file jar-file)})]
+    (hdf5/create-attribute ds "e-paper-datatype" "jar")))
 
 (defn store-script
   "Store the script contained in script-file under name in paper
@@ -96,6 +97,7 @@
   (let [script (slurp script-file)
         ds     (hdf5/create-dataset (hdf5/lookup paper "code")
                                     name script)]
+    (hdf5/create-attribute ds "e-paper-datatype" "script")
     (hdf5/create-attribute ds "script-engine" script-engine)
     (hdf5/create-attribute ds "jvm-jar-files" (map hdf5/path jars))
     ds))
@@ -122,6 +124,7 @@
         program (hdf5/create-group code name)
         args    (map (fn [arg n] (process-program-arg program arg n))
                      args (iterate inc 1))]
+    (hdf5/create-attribute program "e-paper-datatype" "program")
     (hdf5/create-attribute program "jvm-main-class" main-class-name)
     ; Add an empty string to make sure the arg list is never empty,
     ; because HDF5 cannot handle empty arrays.
@@ -225,8 +228,10 @@
                (:accessor code)
                nil))
           (ExecutablePaperRef/setCurrentProgram (:path code))
+          (ExecutablePaperRef/initializeDependencyList)
           (exec cl)
           (finally
+           (ExecutablePaperRef/clearDependencyList)
            (ExecutablePaperRef/setCurrentProgram nil)
            (ExecutablePaperRef/setAccessors nil nil)
            (.setContextClassLoader (Thread/currentThread) cl))))
@@ -274,3 +279,9 @@
   [paper name]
   (dereference (hdf5/lookup paper (str "data/" name))))
 
+(defn create-data
+  [paper name data]
+  (let [ds (hdf5/create-dataset (hdf5/lookup paper "data") name data)]
+    (hdf5/create-attribute ds "e-paper-generating-program" "")
+    (hdf5/create-attribute ds "e-paper-dependencies" [""])
+    ds))

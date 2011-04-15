@@ -14,11 +14,15 @@
                 ch.systemsx.cisd.hdf5.IHDF5Writer)
         acc
         nil)))
+   (ExecutablePaperRef/setCurrentProgram (str "/code/" name))
+   (ExecutablePaperRef/initializeDependencyList)
    (when (not (nil? name))
      (remove-ns name))))
 
 (defn cleanup-script
   []
+  (ExecutablePaperRef/clearDependencyList)
+  (ExecutablePaperRef/setCurrentProgram nil)
   (ExecutablePaperRef/setAccessors nil nil))
 
 (defmacro script
@@ -32,9 +36,7 @@
          (prepare-script ~paper '~name)
          (try
            (doseq [~'form '~body]
-             (prn ~'form)
-             (eval ~'form)
-             )
+             (eval ~'form))
            (finally
             (cleanup-script)
             (in-ns ~'current-ns)))))))
