@@ -169,41 +169,6 @@
       [(.getAbsolutePath tf) tf])
     [arg nil]))
 
-(defn- starts-with
-  [string prefix]
-  (let [c (count prefix)]
-    (and (>= (count string) c)
-         (= prefix (subs string 0 c)))))
-
-(defn- class-loader
-  [jar-files]
-  (let [app-cl    (.getClassLoader clojure.lang.RT)
-        runtime   (File. *e-paper-library* "e-paper-runtime.jar")
-        jar-files (conj jar-files runtime)
-        paper-cl  (proxy [java.net.URLClassLoader]
-                      [(into-array (map #(.toURL %) jar-files))
-                       (.getParent app-cl)]
-                    (findClass
-                     [name]
-                     ; (prn "findClass:" name)
-                     (if (some (partial starts-with name)
-                               ["ch.systemsx.cisd.hdf5."
-                                "ncsa.hdf."
-                                "e_paper.ExecutablePaperRef"])
-                       (do
-                         ; (prn "--> app-loader for " name)
-                         (.loadClass app-cl name))
-                       (proxy-super findClass name)))
-                    ;; (loadClass
-                    ;;  ([name]
-                    ;;      (prn "loadClass:" name)
-                    ;;      (proxy-super loadClass name))
-                    ;;  ([name resolve]
-                    ;;     (prn "loadClass:" name resolve)
-                    ;;     (proxy-super loadClass name resolve)))
-                    )]
-    paper-cl))
-
 (defn- run-code
   [code temp-files exec]
   (let [jar-paths   (-> (hdf5/get-attribute code "jvm-jar-files")
@@ -217,7 +182,7 @@
         jar-files   (reduce write-jar '() jars)
         temp-files  (concat temp-files jar-files)]
     (try
-      (let [cl  (class-loader jar-files)
+      (let [cl  (security/make-class-loader jar-files)
             ccl (.getContextClassLoader (Thread/currentThread))]
         (try
           (.setContextClassLoader (Thread/currentThread) cl)
