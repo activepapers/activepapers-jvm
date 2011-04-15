@@ -1,6 +1,6 @@
 (ns e-paper.authoring
   (:require [e-paper.storage :as storage])
-  (:import ExecutablePaperRef)
+  (:import e_paper.ExecutablePaperRef)
   (:require [clojure.contrib.pprint :as pprint]))
 
 (defn prepare-script

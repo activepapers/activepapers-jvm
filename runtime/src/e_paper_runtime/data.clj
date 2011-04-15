@@ -1,6 +1,6 @@
 (ns e-paper-runtime.data
   (:require [clj-hdf5.core :as hdf5])
-  (:import ExecutablePaperRef))
+  (:import e_paper.ExecutablePaperRef))
 
 (defn- ds-name [name] (str "/data/" name))
 

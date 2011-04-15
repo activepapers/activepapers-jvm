@@ -3,7 +3,7 @@
   (:require [e-paper.utility :as utility])
   (:require [e-paper.security :as security])
   (:import java.io.File)
-  (:import ExecutablePaperRef))
+  (:import e_paper.ExecutablePaperRef))
 
 ;
 ; Location of the library
@@ -186,7 +186,7 @@
                      (if (some (partial starts-with name)
                                ["ch.systemsx.cisd.hdf5."
                                 "ncsa.hdf."
-                                "ExecutablePaperRef"])
+                                "e_paper.ExecutablePaperRef"])
                        (do
                          ; (prn "--> app-loader for " name)
                          (.loadClass app-cl name))
@@ -224,8 +224,10 @@
                        ch.systemsx.cisd.hdf5.IHDF5Writer)
                (:accessor code)
                nil))
+          (ExecutablePaperRef/setCurrentProgram (:path code))
           (exec cl)
           (finally
+           (ExecutablePaperRef/setCurrentProgram nil)
            (ExecutablePaperRef/setAccessors nil nil)
            (.setContextClassLoader (Thread/currentThread) cl))))
       (finally
