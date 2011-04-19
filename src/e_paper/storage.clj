@@ -247,6 +247,7 @@
 (defn create-data
   [paper name data]
   (let [ds (hdf5/create-dataset (hdf5/lookup paper "data") name data)]
+    (hdf5/create-attribute ds "e-paper-datatype" "data")
     (hdf5/create-attribute ds "e-paper-generating-program" "")
     (hdf5/create-attribute ds "e-paper-dependencies" [""])
     ds))

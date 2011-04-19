@@ -69,6 +69,7 @@
                               (make-array String 0)))
           ; HDF5 dosn't like empty arrays
           deps (if (empty? deps) [""] deps)]
+      (hdf5/create-attribute ds "e-paper-datatype" "data")
       (hdf5/create-attribute ds "e-paper-generating-program" program)
       (hdf5/create-attribute ds "e-paper-dependencies" deps)
       ds)))
