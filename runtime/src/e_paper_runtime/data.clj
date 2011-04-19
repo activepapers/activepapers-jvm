@@ -65,10 +65,15 @@
           (throw (Exception. (str "Overwriting dataset " name " created by "
                                   "program " (hdf5/read creator)))))))
     (let [ds   (hdf5/create-dataset data-group name data)
+          ; all datasets read by the calclet so far are dependencies
           deps (vec (.toArray (ExecutablePaperRef/getDependencyList)
                               (make-array String 0)))
-          ; HDF5 dosn't like empty arrays
-          deps (if (empty? deps) [""] deps)]
+          ; add the calclet itself as a dependency
+          deps (conj deps program)
+          ; and also add the program's jar files
+          deps (concat deps (-> (hdf5/lookup root (subs program 1))
+                                (hdf5/get-attribute "jvm-jar-files")
+                                (hdf5/read)))]
       (hdf5/create-attribute ds "e-paper-datatype" "data")
       (hdf5/create-attribute ds "e-paper-generating-program" program)
       (hdf5/create-attribute ds "e-paper-dependencies" deps)

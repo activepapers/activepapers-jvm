@@ -173,9 +173,8 @@
   [code temp-files exec]
   (let [jar-paths   (-> (hdf5/get-attribute code "jvm-jar-files")
                         hdf5/read)
-        get-ds      (partial hdf5/lookup (hdf5/root code))
+        get-ds      (partial hdf5/get-dataset (hdf5/root code))
         jars        (map #(-> %
-                              (subs 1)
                               get-ds
                               dereference)
                          jar-paths)
