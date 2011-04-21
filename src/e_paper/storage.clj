@@ -1,17 +1,18 @@
 (ns e-paper.storage
   (:require [clj-hdf5.core :as hdf5])
   (:require [e-paper.utility :as utility])
-  (:require [e-paper.security :as security])
-  (:import java.io.File)
-  (:import e_paper.ExecutablePaperRef))
+  (:import java.io.File))
 
 ;
 ; Location of the library
 ;
-(def *e-paper-library* (File. (System/getenv "EPAPER_LIBRARY")))
+(let [path (System/getenv "EPAPER_LIBRARY")]
+  (when (nil? path)
+    (throw (Exception. "Environment variable EPAPER_LIBRARY not set.")))
+  (def *e-paper-library* (File. path)))
 
 (defn library-file
-  "Return a File object for library-name"
+  "Return a java.io.File object for library-name"
   [library-name]
   (File. *e-paper-library* (str library-name ".h5")))
 
@@ -19,6 +20,8 @@
 ; Opening and closing
 ;
 (defn create
+  "Create a new empty e-paper. A previously existing file of the same
+   name is overwritten."
   [file]
   (assert (isa? (class file) java.io.File))
   (let [root (hdf5/create file)]
@@ -38,6 +41,7 @@
 ; References
 ;
 (defn reference?
+  "Return true if ds is a reference to another e-paper."
   [ds]
   (when-let [attr (hdf5/get-attribute ds "e-paper-datatype")]
     (= (hdf5/read attr) "reference")))
@@ -92,12 +96,15 @@
   "Store the script contained in script-file under name in paper
    such that it will be run with script-engine and with the jars
    on the classpath."
-  [paper name script-file script-engine jars]
-  (assert (isa? (class script-file) java.io.File))
-  (let [script (slurp script-file)
+  [paper name script-text-or-file script-engine jars]
+  (assert (or (string? script-text-or-file)
+              (isa? (class script-text-or-file) java.io.File)))
+  (let [script (if (string? script-text-or-file)
+                 script-text-or-file
+                 (slurp script-text-or-file))
         ds     (hdf5/create-dataset (hdf5/lookup paper "code")
                                     name script)]
-    (hdf5/create-attribute ds "e-paper-datatype" "script")
+    (hdf5/create-attribute ds "e-paper-datatype" "script-calclet")
     (hdf5/create-attribute ds "script-engine" script-engine)
     (hdf5/create-attribute ds "jvm-jar-files" (map hdf5/path jars))
     ds))
@@ -124,7 +131,7 @@
         program (hdf5/create-group code name)
         args    (map (fn [arg n] (process-program-arg program arg n))
                      args (iterate inc 1))]
-    (hdf5/create-attribute program "e-paper-datatype" "program")
+    (hdf5/create-attribute program "e-paper-datatype" "program-calclet")
     (hdf5/create-attribute program "jvm-main-class" main-class-name)
     ; Add an empty string to make sure the arg list is never empty,
     ; because HDF5 cannot handle empty arrays.
@@ -133,110 +140,13 @@
     program))
     
 ;
-; Run code from a paper
+; Access code from a paper
 ;
 (defn get-code
   [paper name]
   (dereference (hdf5/lookup (hdf5/lookup paper "code") name)))
 
-(defn- write-jar
-  [tempfiles ds]
-  (let [{tag :tag data :data} (hdf5/read ds)
-        _   (assert (= tag "jar"))
-        tf  (utility/create-tempfile "ep-" ".jar" data)]
-    (cons tf tempfiles)))
-
-(defn- write-arg-file
-  [tempfiles ds]
-  (let [data (hdf5/read ds)
-        tf   (utility/create-tempfile "ep-arg-" ".jar" data)]
-    (cons tf tempfiles)))
-
-(defn- write-script
-  [ds]
-  (let [script (hdf5/read ds)
-        _      (assert (string? script))]
-    (utility/create-tempfile "ep-script-" "" script)))
-
-(defn- retrieve-arg
-  [program arg]
-  (if (= \tab (first arg))
-    (let [ds-name (subs arg 1)
-          ds      (hdf5/lookup program ds-name)
-          data    (hdf5/read ds)
-          name    (last (clojure.string/split ds-name #"/"))
-          tf      (utility/create-tempfile (str "ep-" name "-") "" data)]
-      [(.getAbsolutePath tf) tf])
-    [arg nil]))
-
-(defn- run-code
-  [code temp-files exec]
-  (let [jar-paths   (-> (hdf5/get-attribute code "jvm-jar-files")
-                        hdf5/read)
-        get-ds      (partial hdf5/get-dataset (hdf5/root code))
-        jars        (map #(-> %
-                              get-ds
-                              dereference)
-                         jar-paths)
-        jar-files   (reduce write-jar '() jars)
-        temp-files  (concat temp-files jar-files)]
-    (try
-      (let [cl  (security/make-class-loader jar-files)
-            ccl (.getContextClassLoader (Thread/currentThread))]
-        (try
-          (.setContextClassLoader (Thread/currentThread) cl)
-          (ExecutablePaperRef/setAccessors
-             (:accessor code)
-             (if (isa? (class (:accessor code))
-                       ch.systemsx.cisd.hdf5.IHDF5Writer)
-               (:accessor code)
-               nil))
-          (ExecutablePaperRef/setCurrentProgram (:path code))
-          (ExecutablePaperRef/initializeDependencyList)
-          (exec cl)
-          (finally
-           (ExecutablePaperRef/clearDependencyList)
-           (ExecutablePaperRef/setCurrentProgram nil)
-           (ExecutablePaperRef/setAccessors nil nil)
-           (.setContextClassLoader (Thread/currentThread) cl))))
-      (finally
-       (dorun (map #(.delete %) temp-files))))))
-
-(defn run-program
-  [program]
-  (assert (hdf5/group? program))
-  (security/with-full-permissions
-    (let [class-name  (hdf5/read (hdf5/get-attribute program "jvm-main-class"))
-          args        (-> (hdf5/get-attribute program "args")
-                          hdf5/read
-                          pop)
-          args        (map #(retrieve-arg program %) args)
-          temp-files  (filter identity (map second args))
-          args        (map first args)
-          arg-array   (into-array Object [(into-array String args)])
-          empty-array (into-array Class [(class (make-array String 0))])]
-      (run-code program temp-files
-                (fn [loader]
-                  (let [init-class (.loadClass loader class-name)
-                        main       (.getDeclaredMethod init-class "main"
-                                                       empty-array)]
-                    (security/with-restricted-permissions
-                      (. main invoke nil arg-array))))))))
-
-(defn run-script
-  [script]
-  (assert (hdf5/node? script))
-  (security/with-full-permissions
-    (let [engine-name (hdf5/read (hdf5/get-attribute script "script-engine"))
-          script-text (hdf5/read script)]
-      (run-code script '()
-                (fn [loader]
-                  (let [manager (javax.script.ScriptEngineManager. loader)
-                        engine  (.getEngineByName manager engine-name)]
-                    (security/with-restricted-permissions
-                      (.eval engine script-text))))))))
-
-;
+                                        ;
 ; Access to data in the paper
 ;
 (defn get-data

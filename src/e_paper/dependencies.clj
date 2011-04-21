@@ -11,11 +11,14 @@
   [paper]
   (hdf5/walk paper identity (fn [n] (nil? (datatype n)))))
 
-(defn- e-paper-items
+(defn e-paper-items
+  "Find all items in the paper that are recognized by the
+   e-paper infrastructure."
   [paper]
   (filter datatype (items paper)))
 
 (defn non-e-paper-items
+  "Find all items in the paper that are ignored by the e-paper infrastructure."
   [paper]
   (filter #(and (nil? (datatype %))
                 (or (not (hdf5/group? %))
@@ -23,6 +26,7 @@
           (items paper)))
 
 (defn library-references
+  "Find all references to library data in the paper."
   [paper]
   (filter storage/reference? (e-paper-items paper)))
 
@@ -51,10 +55,14 @@
           (e-paper-items paper)))
 
 (defn dependent-items
+  "Find all items in the paper that have dependencies."
   [paper]
   (filter dependencies (e-paper-items paper)))
 
 (defn dependency-hierarchy
+  "Return a sequence of sets of items in the paper such that the items
+   in any sets depend only on items in the previous sets. The first set
+   contains the dependency-free items."
   [paper]
   (let [items   (map #(vector % (set (dependencies %))) (e-paper-items paper))
         groups  (group-by (comp empty? second) items)
@@ -71,10 +79,11 @@
                                           (clojure.set/subset? deps known))
                                         unknown)))
               known   (clojure.set/union known next)
-              unknown (filter (fn [[item _]] (not (contains? next item))) unknown)]
+              unknown (filter (fn [[item _]] (not (contains? next item)))
+                              unknown)]
           (when (empty? next)
             (throw (Exception. "cyclic dependencies")))
           (recur (conj levels next) known unknown))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(def paper (storage/open (java.io.File.  "/Users/hinsen/projects/e-paper/examples/clojure-prog/clojure_paper.h5")))
+;(def paper (storage/open (java.io.File.  "/Users/hinsen/projects/e-paper/examples/clojure-prog/clojure_paper.h5")))

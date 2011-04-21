@@ -1,5 +1,6 @@
 (ns e-paper.authoring
   (:require [e-paper.storage :as storage])
+  (:require [e-paper.execution :as execution])
   (:import e_paper.ExecutablePaperRef)
   (:require [clojure.contrib.pprint :as pprint]))
 
@@ -25,7 +26,7 @@
   (ExecutablePaperRef/setCurrentProgram nil)
   (ExecutablePaperRef/setAccessors nil nil))
 
-(defmacro script
+(defmacro clojure-script
   [paper jars & body]
   (assert (= (first (first body)) 'ns))
   (let [name (second (first body))]
@@ -40,3 +41,8 @@
            (finally
             (cleanup-script)
             (in-ns ~'current-ns)))))))
+
+(defn script
+  [paper name script-engine jars text]
+  (let [ds (storage/store-script paper name text script-engine jars)]
+    (execution/run-calclet ds)))

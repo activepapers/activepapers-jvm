@@ -1,13 +1,13 @@
-(ns clojure-script.run-paper
+(ns clojure-prog.run
   (:require [e-paper.storage :as ep])
+  (:require [e-paper.execution :as run])
   (:import java.io.File))
 
 (def dir (File. "/Users/hinsen/projects/e-paper/examples/clojure-script/"))
 
 (def paper (ep/open (File. dir "clojure_paper.h5")))
 
-(def script (ep/get-program paper "hello"))
-
-(ep/run-script script)
+(run/rebuild-from-primary-items paper (File. dir "clone.h5"))
 
 (ep/close paper)
+
