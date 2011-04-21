@@ -31,6 +31,8 @@ public class launcher{
                     Var.popThreadBindings();
             }
         } catch (Exception ex) {
+            System.err.println("Calclet raised exception:");
+            System.err.println(ex);
             }
     }
 }
