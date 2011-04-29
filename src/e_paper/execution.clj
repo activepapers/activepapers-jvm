@@ -29,10 +29,10 @@
     (utility/create-tempfile "ep-script-" "" script)))
 
 (defn- retrieve-arg
-  [program arg]
+  [calclet arg]
   (if (= \tab (first arg))
     (let [ds-name (subs arg 1)
-          ds      (hdf5/lookup program ds-name)
+          ds      (hdf5/lookup calclet ds-name)
           data    (hdf5/read ds)
           name    (last (clojure.string/split ds-name #"/"))
           tf      (utility/create-tempfile (str "ep-" name "-") "" data)]
@@ -61,12 +61,12 @@
                        ch.systemsx.cisd.hdf5.IHDF5Writer)
                (:accessor code)
                nil))
-          (ExecutablePaperRef/setCurrentProgram cl (:path code))
+          (ExecutablePaperRef/setCurrentCalclet cl (:path code))
           (ExecutablePaperRef/initializeDependencyList cl)
           (exec cl)
           (finally
            (ExecutablePaperRef/clearDependencyList cl)
-           (ExecutablePaperRef/setCurrentProgram cl nil)
+           (ExecutablePaperRef/setCurrentCalclet cl nil)
            (ExecutablePaperRef/setAccessors cl nil nil)
            (.setContextClassLoader (Thread/currentThread) cl))))
       (finally
@@ -124,7 +124,7 @@
         (let [calclets (set (for [item items]
                               (hdf5/read
                                (hdf5/get-attribute
-                                item "e-paper-generating-program"))))]
+                                item "e-paper-generating-calclet"))))]
           (doseq [calclet calclets]
             (run-calclet (hdf5/get-dataset clone calclet)))))
       (finally (storage/close clone)))))

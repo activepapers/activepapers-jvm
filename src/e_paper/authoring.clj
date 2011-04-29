@@ -18,7 +18,7 @@
                  ch.systemsx.cisd.hdf5.IHDF5Writer)
          acc
          nil))
-     (ExecutablePaperRef/setCurrentProgram cl (str "/code/" name))
+     (ExecutablePaperRef/setCurrentCalclet cl (str "/code/" name))
      (ExecutablePaperRef/initializeDependencyList cl))
    (when (not (nil? name))
      (remove-ns name))))
@@ -27,7 +27,7 @@
   []
   (let [cl (.getClassLoader ExecutablePaperRef)]
     (ExecutablePaperRef/clearDependencyList cl)
-    (ExecutablePaperRef/setCurrentProgram cl nil)
+    (ExecutablePaperRef/setCurrentCalclet cl nil)
     (ExecutablePaperRef/setAccessors cl nil nil)))
 
 (defmacro clojure-script

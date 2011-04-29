@@ -16,7 +16,7 @@ public final class ExecutablePaperRef {
 
     private static Map readers = Collections.synchronizedMap(new HashMap());
     private static Map writers = Collections.synchronizedMap(new HashMap());
-    private static Map programs = Collections.synchronizedMap(new HashMap());
+    private static Map calclets = Collections.synchronizedMap(new HashMap());
     private static Map dependencies = Collections.synchronizedMap(new HashMap());
 
     public static Class[] getStack() {
@@ -62,22 +62,22 @@ public final class ExecutablePaperRef {
         return writer;
     }
 
-    public static void setCurrentProgram(ClassLoader cl,
-                                         String program_name) {
-        if (program_name == null)
-            programs.remove(cl);
+    public static void setCurrentCalclet(ClassLoader cl,
+                                         String calclet_name) {
+        if (calclet_name == null)
+            calclets.remove(cl);
         else
-            programs.put(cl, program_name);
+            calclets.put(cl, calclet_name);
     }
 
-    public static String getCurrentProgram() {
-        String program = null;
+    public static String getCurrentCalclet() {
+        String calclet = null;
         for (Class cl: getStack()) {
-            program = (String)programs.get(cl.getClassLoader());
-            if (program != null)
+            calclet = (String)calclets.get(cl.getClassLoader());
+            if (calclet != null)
                 break;
         }
-        return program;
+        return calclet;
     }
 
     public static void clearDependencyList(ClassLoader cl) {
@@ -85,10 +85,10 @@ public final class ExecutablePaperRef {
     }
 
     public static void initializeDependencyList(ClassLoader cl) {
-        dependencies.put(cl, new ArrayList());
+        dependencies.put(cl, new ArrayList<String>());
     }
 
-    public static List getDependencyList() {
+    public static List<String> getDependencyList() {
         List dependency_list = null;
         for (Class cl: getStack()) {
             dependency_list = (List)dependencies.get(cl.getClassLoader());
@@ -99,7 +99,7 @@ public final class ExecutablePaperRef {
     }
 
     public static void addDependency(String ds_name) {
-        List dependency_list = null;
+        List<String> dependency_list = null;
         for (Class cl: getStack()) {
             dependency_list = (List)dependencies.get(cl.getClassLoader());
             if (dependency_list != null)
