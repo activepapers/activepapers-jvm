@@ -50,31 +50,33 @@
 ;
 (defn create-data
   [name data]
-  (let [writer     (ExecutablePaperRef/getWriter)
-        root       (hdf5/make-hdf-node writer "/")
-        data-group (hdf5/lookup root "data")
-        program    (ExecutablePaperRef/getCurrentProgram)]
+  (let [writer  (ExecutablePaperRef/getWriter)
+        program (ExecutablePaperRef/getCurrentProgram)]
     (when (nil? writer)
       (throw (Exception. 
               (if (nil? (ExecutablePaperRef/getReader))
                 "no e-paper open"
                 "e-paper not writable"))))
-    (when-let [ds (hdf5/lookup data-group name)]
-      (let [creator (hdf5/get-attribute ds "e-paper-generating-program")]
-        (if (or (nil? creator) (not= (hdf5/read creator) program))
-          (throw (Exception. (str "Overwriting dataset " name " created by "
-                                  "program " (hdf5/read creator)))))))
-    (let [ds   (hdf5/create-dataset data-group name data)
-          ; all datasets read by the calclet so far are dependencies
-          deps (vec (.toArray (ExecutablePaperRef/getDependencyList)
-                              (make-array String 0)))
-          ; add the calclet itself as a dependency
-          deps (conj deps program)
-          ; and also add the program's jar files
-          deps (concat deps (-> (hdf5/lookup root (subs program 1))
-                                (hdf5/get-attribute "jvm-jar-files")
-                                (hdf5/read)))]
-      (hdf5/create-attribute ds "e-paper-datatype" "data")
-      (hdf5/create-attribute ds "e-paper-generating-program" program)
-      (hdf5/create-attribute ds "e-paper-dependencies" deps)
-      ds)))
+    (when (nil? program)
+      (throw (Exception. "no calclet active")))
+    (let [root       (hdf5/make-hdf-node writer "/")
+          data-group (hdf5/lookup root "data")]
+      (when-let [ds (hdf5/lookup data-group name)]
+        (let [creator (hdf5/get-attribute ds "e-paper-generating-program")]
+          (if (or (nil? creator) (not= (hdf5/read creator) program))
+            (throw (Exception. (str "Overwriting dataset " name " created by "
+                                    "program " (hdf5/read creator)))))))
+      (let [ds   (hdf5/create-dataset data-group name data)
+            ; all datasets read by the calclet so far are dependencies
+            deps (vec (.toArray (ExecutablePaperRef/getDependencyList)
+                                (make-array String 0)))
+            ; add the calclet itself as a dependency
+            deps (conj deps program)
+            ; and also add the calclet's jar files
+            deps (concat deps (-> (hdf5/lookup root (subs program 1))
+                                  (hdf5/get-attribute "jvm-jar-files")
+                                  (hdf5/read)))]
+        (hdf5/create-attribute ds "e-paper-datatype" "data")
+        (hdf5/create-attribute ds "e-paper-generating-program" program)
+        (hdf5/create-attribute ds "e-paper-dependencies" deps)
+        ds))))

@@ -55,19 +55,19 @@
             ccl (.getContextClassLoader (Thread/currentThread))]
         (try
           (.setContextClassLoader (Thread/currentThread) cl)
-          (ExecutablePaperRef/setAccessors
+          (ExecutablePaperRef/setAccessors cl
              (:accessor code)
              (if (isa? (class (:accessor code))
                        ch.systemsx.cisd.hdf5.IHDF5Writer)
                (:accessor code)
                nil))
-          (ExecutablePaperRef/setCurrentProgram (:path code))
-          (ExecutablePaperRef/initializeDependencyList)
+          (ExecutablePaperRef/setCurrentProgram cl (:path code))
+          (ExecutablePaperRef/initializeDependencyList cl)
           (exec cl)
           (finally
-           (ExecutablePaperRef/clearDependencyList)
-           (ExecutablePaperRef/setCurrentProgram nil)
-           (ExecutablePaperRef/setAccessors nil nil)
+           (ExecutablePaperRef/clearDependencyList cl)
+           (ExecutablePaperRef/setCurrentProgram cl nil)
+           (ExecutablePaperRef/setAccessors cl nil nil)
            (.setContextClassLoader (Thread/currentThread) cl))))
       (finally
        (dorun (map #(.delete %) temp-files))))))

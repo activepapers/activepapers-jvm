@@ -16,7 +16,7 @@
 ; A SecurityManager that is active only when *access-control* is true.
 ;
 (def security-manager
-     (proxy [java.lang.SecurityManager] []
+     (proxy [e_paper.EPaperSecurityManager] []
      (checkPermission
       ([permission]
          (when *access-control*

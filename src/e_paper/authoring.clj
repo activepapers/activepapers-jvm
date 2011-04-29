@@ -1,5 +1,6 @@
 (ns e-paper.authoring
   (:require [e-paper.storage :as storage])
+  (:require [e-paper.security :as security])
   (:require [e-paper.execution :as execution])
   (:import e_paper.ExecutablePaperRef)
   (:require [clojure.contrib.pprint :as pprint]))
@@ -8,23 +9,26 @@
   ([paper]
    (prepare-script paper nil))
   ([paper name]
-   (let [acc (:accessor paper)]
-     (ExecutablePaperRef/setAccessors
-      acc
-      (if (isa? (class acc)
-                ch.systemsx.cisd.hdf5.IHDF5Writer)
-        acc
-        nil)))
-   (ExecutablePaperRef/setCurrentProgram (str "/code/" name))
-   (ExecutablePaperRef/initializeDependencyList)
+   (security/start-secure-mode)
+   (let [cl (.getClassLoader ExecutablePaperRef)
+         acc (:accessor paper)]
+     (ExecutablePaperRef/setAccessors cl
+       acc
+       (if (isa? (class acc)
+                 ch.systemsx.cisd.hdf5.IHDF5Writer)
+         acc
+         nil))
+     (ExecutablePaperRef/setCurrentProgram cl (str "/code/" name))
+     (ExecutablePaperRef/initializeDependencyList cl))
    (when (not (nil? name))
      (remove-ns name))))
 
 (defn cleanup-script
   []
-  (ExecutablePaperRef/clearDependencyList)
-  (ExecutablePaperRef/setCurrentProgram nil)
-  (ExecutablePaperRef/setAccessors nil nil))
+  (let [cl (.getClassLoader ExecutablePaperRef)]
+    (ExecutablePaperRef/clearDependencyList cl)
+    (ExecutablePaperRef/setCurrentProgram cl nil)
+    (ExecutablePaperRef/setAccessors cl nil nil)))
 
 (defmacro clojure-script
   [paper jars & body]
