@@ -1,0 +1,5 @@
+#!/bin/bash
+cd src/clojure
+javac -cp ../../../jars/clojure-1.2.1.jar launcher.java 
+cd ..
+jar cf ../clojure-runtime.jar clojure/launcher.class e_paper_runtime/data.clj
