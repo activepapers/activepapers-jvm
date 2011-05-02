@@ -1,5 +1,5 @@
 (ns e-paper-runtime.data
-  (:require [clj-hdf5.core :as hdf5])
+ (:require [clj-hdf5.core :as hdf5])
   (:import e_paper.ExecutablePaperRef)
   (:import e_paper_runtime.HDF5Node)
   (:import e_paper_runtime.DataAccess)
@@ -28,7 +28,6 @@
 ;
 ; Creation of a new dataset, with all the required attributes.
 ;
-
 (defn create-data
   [name data]
   (let [node (DataAccess/createData name)
