@@ -4,7 +4,8 @@
   (:require [e-paper.dependencies :as dependencies])
   (:require [e-paper.security :as security])
   (:require [e-paper.utility :as utility])
-  (:import e_paper.ExecutablePaperRef))
+  (:import e_paper.ExecutablePaperRef)
+  (:import java.io.File))
 
 ;
 ; Run calclets from a paper
@@ -49,7 +50,9 @@
                               storage/dereference)
                          jar-paths)
         jar-files   (reduce write-jar '() jars)
-        temp-files  (concat temp-files jar-files)]
+        temp-files  (concat temp-files jar-files)
+        jar-files   (conj jar-files (File. storage/*e-paper-library*
+                                           "e-paper-runtime.jar"))]
     (try
       (let [cl  (security/make-class-loader jar-files)
             ccl (.getContextClassLoader (Thread/currentThread))]
