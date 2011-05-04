@@ -31,10 +31,15 @@
   (filter storage/reference? (e-paper-items paper)))
 
 (defn library-dependencies
-  "Return the set of other papers to which the current one has references."
+  "Return a map from library names to vectors of references that point
+   to that library."
   [paper]
-  (set (map #(first (hdf5/read %))
-            (library-references paper))))
+  (reduce (fn [deps new-ref]
+            (let [library (first (hdf5/read new-ref))]
+              (assoc deps library
+                     (conj (get deps library []) new-ref))))
+          {}
+          (library-references paper)))
 
 (defn dependencies
   "Find the dependencies of item. Return nil if there are none."

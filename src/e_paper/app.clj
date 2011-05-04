@@ -25,14 +25,16 @@
   (let [paper (storage/open (File. filename))]
 
     (when-let [non-e-paper (deps/non-e-paper-items paper)]
-    (println "HDF5 items not handled by e-paper:")
-    (doseq [node non-e-paper]
-      (println (str "  " (:path node)))))
+      (println "HDF5 items not handled by e-paper:")
+      (doseq [node non-e-paper]
+        (println (str "  " (:path node)))))
     
     (when-let [libraries (deps/library-dependencies paper)]
-    (println "Library dependencies:")
-    (doseq [name libraries]
-      (println (str "  " name))))
+      (println "Library dependencies:")
+      (doseq [name (keys libraries)]
+        (println (str "  " name))
+        (doseq [ref (get libraries name)]
+          (println (str "    " (hdf5/path ref))))))
 
     (doseq [[level items] (map vector
                              (iterate inc 0)
@@ -41,9 +43,7 @@
         (do
           (println "Items without dependencies:")
           (doseq [node items]
-            (if (storage/reference? node)
-              (println (str "  " (:path node)
-                            " (library " (first (hdf5/read node))")"))
+            (when-not (storage/reference? node)
               (println (str "  " (:path node))))))
         (do
           (println "Dependency level " level "")
