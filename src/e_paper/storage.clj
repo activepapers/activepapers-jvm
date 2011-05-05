@@ -51,11 +51,11 @@
 ; TODO will the library file ever be closed?
 (defn dereference
   [ds]
-  (if (reference? ds)
-    (let [[library path] (hdf5/read ds)
-          library        (library-file library)]
-      (recur (hdf5/lookup (hdf5/open library) path)))
-    ds))
+  (cond (nil? ds)         nil
+        (reference? ds)   (let [[library path] (hdf5/read ds)
+                                library        (library-file library)]
+                            (recur (hdf5/lookup (hdf5/open library) path)))
+        :else              ds))
 
 (defn reference-exists?
   [library path]
@@ -78,8 +78,8 @@
   (let [lib-hdf5   (hdf5/open (library-file library))
         code-nodes (-> (hdf5/lookup lib-hdf5 "code") hdf5/members keys)]
     (hdf5/close lib-hdf5)
-    (for [ds-name code-nodes]
-      (store-code-reference paper ds-name library ds-name))))
+    (doall (for [ds-name code-nodes]
+             (store-code-reference paper ds-name library ds-name)))))
 
 ;
 ; Store code in a paper
@@ -146,7 +146,7 @@
   [paper name]
   (dereference (hdf5/lookup (hdf5/lookup paper "code") name)))
 
-                                        ;
+;
 ; Access to data in the paper
 ;
 (defn get-data
