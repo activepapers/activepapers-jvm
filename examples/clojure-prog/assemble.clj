@@ -10,11 +10,23 @@
 
 (def jars (ep/store-library-references paper "clojure"))
 
+; REPL and swank-server are for calclet development
 (auth/clojure-script paper jars
-  (ns calclet-repl
-    (:require clojure.main))
+  (ns repl
+    (:require clojure.main)
+    (:require [e-paper-runtime.data :as data])
+    (:require [clj-hdf5.core :as hdf5]))
   (clojure.main/repl))
 
+(auth/clojure-script paper jars
+  (ns swank-server)
+  (ns user
+    (:require [e-paper-runtime.data :as data])
+    (:require [clj-hdf5.core :as hdf5])
+    (:require [swank.swank]))
+  (swank.swank/start-repl))
+
+; The real calclets are run immediately.
 (execution/run-calclet
  (auth/clojure-script paper jars
    (ns generate-input

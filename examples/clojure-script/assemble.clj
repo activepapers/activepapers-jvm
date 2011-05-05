@@ -1,6 +1,7 @@
 (ns clojure-script.assemble
   (:require [e-paper.storage :as ep])
   (:require [e-paper.authoring :as auth])
+  (:require [e-paper.execution :as execution])
   (:import java.io.File))
 
 (def dir (File. "/Users/hinsen/projects/e-paper/examples/clojure-script/"))
@@ -9,12 +10,7 @@
 
 (def jars (ep/store-library-references paper "clojure"))
 
-(auth/script paper "calclet-repl" "Clojure" jars
-"(ns calclet-repl
-    (:require clojure.main))
- (clojure.main/repl)
-")
-
+; The real calclets are run immediately.
 (execution/run-calclet
  (auth/script paper "generate-input" "Clojure" jars
 " (ns generate-input
@@ -33,5 +29,22 @@
         sine      (map #(Math/sin (* 2 Math/PI frequency %)) time)]
     (data/create-data \"sine\" sine))
 "))
+
+; REPL and swank-server are for calclet development
+(auth/script paper "repl" "Clojure" jars
+"(ns repl
+    (:require clojure.main)
+    (:require [e-paper-runtime.data :as data])
+    (:require [clj-hdf5.core :as hdf5]))
+ (clojure.main/repl)
+")
+
+(auth/script paper "swank-server" "Clojure" jars
+"(ns calclet
+    (:require [e-paper-runtime.data :as data])
+    (:require [clj-hdf5.core :as hdf5])
+    (:require [swank.swank]))
+ (swank.swank/start-repl)
+")
 
 (ep/close paper)
