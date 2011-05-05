@@ -102,7 +102,12 @@
                           main       (.getDeclaredMethod init-class "main"
                                                          empty-array)]
                       (security/with-restricted-permissions
-                        (. main invoke nil arg-array))))))
+                        (try
+                          (. main invoke nil arg-array)
+                          (catch Exception e
+                            (println (str "Exception in calclet "
+                                          (hdf5/name calclet) ":"))
+                            (println (.toString e)))))))))
       ; Run script using the Java script engine mechanism
       (let [engine-name (hdf5/read (hdf5/get-attribute calclet "script-engine"))
             script      (hdf5/read calclet)]
@@ -111,7 +116,12 @@
                     (let [manager (javax.script.ScriptEngineManager. loader)
                           engine  (.getEngineByName manager engine-name)]
                       (security/with-restricted-permissions
-                        (.eval engine script)))))))))
+                        (try
+                          (.eval engine script)
+                          (catch javax.script.ScriptException e
+                            (println (str "Exception in calclet "
+                                          (hdf5/name calclet) ":"))
+                            (println (.getMessage e))))))))))))
 
 ;
 ; Re-create a paper from its primary items
