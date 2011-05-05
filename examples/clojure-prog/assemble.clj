@@ -1,6 +1,7 @@
 (ns clojure-prog.assemble
   (:require [e-paper.storage :as ep])
   (:require [e-paper.authoring :as auth])
+  (:require [e-paper.execution :as execution])
   (:import java.io.File))
 
 (def dir (File. "/Users/hinsen/projects/e-paper/examples/clojure-prog/"))
@@ -10,18 +11,25 @@
 (def jars (ep/store-library-references paper "clojure"))
 
 (auth/clojure-script paper jars
-  (ns generate-input
-    (:require [e-paper-runtime.data :as data]))
-  (data/create-data "time" (vec (range 0. 10. 0.1)))
-  (data/create-data "frequency" 0.2))
+  (ns calclet-repl
+    (:require clojure.main))
+  (clojure.main/repl))
 
-(auth/clojure-script paper jars
-  (ns calc-sine
-    (:require [e-paper-runtime.data :as data])
-    (:require [clj-hdf5.core :as hdf5]))
-  (let [time      (hdf5/read (data/get-data "time"))
-        frequency (hdf5/read (data/get-data "frequency"))
-        sine      (map #(Math/sin (* 2 Math/PI frequency %)) time)]
-    (data/create-data "sine" sine)))
+(execution/run-calclet
+ (auth/clojure-script paper jars
+   (ns generate-input
+     (:require [e-paper-runtime.data :as data]))
+   (data/create-data "time" (vec (range 0. 10. 0.1)))
+   (data/create-data "frequency" 0.2)))
+
+(execution/run-calclet
+ (auth/clojure-script paper jars
+   (ns calc-sine
+     (:require [e-paper-runtime.data :as data])
+     (:require [clj-hdf5.core :as hdf5]))
+   (let [time      (hdf5/read (data/get-data "time"))
+         frequency (hdf5/read (data/get-data "frequency"))
+         sine      (map #(Math/sin (* 2 Math/PI frequency %)) time)]
+     (data/create-data "sine" sine))))
 
 (ep/close paper)

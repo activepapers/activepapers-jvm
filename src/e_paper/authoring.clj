@@ -9,14 +9,11 @@
   [paper jars & body]
   (assert (= (first (first body)) 'ns))
   (let [name (second (first body))]
-    `(do
-       (let [ds# (storage/store-program
-                   ~paper (str '~name) ~jars "clojure.launcher"
-                   [{:type :text-file
-                     :contents (apply str (map prn-str '~body))}])]
-         (execution/run-calclet ds#)))))
+    `(storage/store-program
+      ~paper (str '~name) ~jars "clojure.launcher"
+      [{:type :text-file
+        :contents (apply str (map prn-str '~body))}])))
 
 (defn script
   [paper name script-engine jars text]
-  (let [ds (storage/store-script paper name text script-engine jars)]
-    (execution/run-calclet ds)))
+  (storage/store-script paper name text script-engine jars))
