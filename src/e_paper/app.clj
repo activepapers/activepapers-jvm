@@ -7,21 +7,43 @@
   (:require [e-paper.execution :as run])
   (:import java.io.File))
 
-(defn check-file
+(defn error-message
+  [& items]
+  (.println System/err (apply str items))
+  (throw (Exception.)))
+
+(defn assert-file-exists
   [filename]
   (when-not [(.exists (File. filename))]
-    (.println System/err (str "File " filename " not found"))
-    (throw (Exception.))))
+    (error-message "File " filename " not found")))
+
+(defn run-calclet
+  [filename calclet-name]
+  (assert-file-exists filename)
+  (let [paper   (storage/open (File. filename) :read-write)
+        calclet (storage/get-code paper calclet-name)]
+    (when (nil? calclet)
+      (error-message "No calclet " calclet-name))
+    (run/run-calclet calclet)))
 
 (defn rebuild
   [in-filename out-filename]
-  (check-file in-filename)
+  (assert-file-exists in-filename)
   (run/rebuild-from-primary-items (storage/open (File. in-filename))
                                   (File. out-filename)))
 
+(defn script
+  [filename]
+  (assert-file-exists filename)
+  (try
+    (clojure.main/main filename)
+    (catch Exception e
+      (println "Exception in script:")
+      (println (.toString e)))))
+
 (defn analyze
   [filename]
-  (check-file filename)
+  (assert-file-exists filename)
   (let [paper (storage/open (File. filename))]
 
     (when-let [non-e-paper (deps/non-e-paper-items paper)]
@@ -63,7 +85,8 @@
      {"repl"    [clojure.main/main 0]
       "analyze" [analyze 1]
       "rebuild" [rebuild 2]
-      "script"  [clojure.main/main 1]})
+      "script"  [script 1]
+      "run_calclet"     [run-calclet 2]})
 
 (def help-text
 "Commands:
@@ -74,6 +97,10 @@ analyze <e-paper>
 rebuild <e-paper> <rebuilt-e-paper>
   copies all non-dependent items from <e-paper> to <rebuilt-e-paper>
   and runs the calclets to rebuild the dependent items
+
+run_calclet <e-paper> <calclet-name>
+  run the named calclet from the e-paper
+  (provide the calclet name without the prefix /code)
 
 repl
    start a Clojure repl with the e-paper classpath
@@ -86,9 +113,12 @@ script
 (defn -main [& args]
   (let [[command-name & args] args
         [command nargs]       (commands command-name)]
-    (if (or (nil? command)
-            (not= (count args) nargs))
-      (println help-text)
-      (try
-        (apply command args)
-        (catch Exception e nil)))))
+    (cond
+     (nil? command)
+       (println help-text)
+     (not= (count args) nargs)
+       (println (str command-name " needs " nargs " arguments"))
+     :else
+       (try
+         (apply command args)
+         (catch Exception e nil)) )))
