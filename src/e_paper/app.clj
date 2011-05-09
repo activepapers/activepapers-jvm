@@ -81,18 +81,42 @@
                             calclet))))
           )))))
 
+(defn parse-jar-spec
+  [jar-spec]
+  (let [[_ ds-name jar-file]
+        (re-matches #"([a-zA-Z0-9-_]+)=(.*\.jar)" jar-spec)]
+    (if (nil? ds-name)
+      (do (println (str "invalid argument: " jar-spec))
+          (System/exit 1))
+      [ds-name jar-file])))
+
+(defn make-library
+  [library-filename & jar-specs]
+  (let [jar-specs (map parse-jar-spec jar-specs)
+        library (storage/create (File. library-filename))]
+    (doseq [[ds-name jar-file] jar-specs]
+      (storage/store-jar library ds-name (File. jar-file)))
+    (storage/close library)))
+
 (def commands
      {"repl"    [clojure.main/main 0]
       "analyze" [analyze 1]
       "rebuild" [rebuild 2]
       "script"  [script 1]
-      "run_calclet"     [run-calclet 2]})
+      "run_calclet"   [run-calclet 2]
+      "make_library"  [make-library [1 nil]]})
 
 (def help-text
 "Commands:
 
 analyze <e-paper>
   show the dependencies between the datasets in <e-paper>
+
+make_library <e-paper> <jar-spec> ...
+  creates an e-paper representing a code library from a
+  collection of jar files. Each jar-spec has the form
+  name=jar_file_name, where name is the dataset name in
+  the code section of the e-paper.
 
 rebuild <e-paper> <rebuilt-e-paper>
   copies all non-dependent items from <e-paper> to <rebuilt-e-paper>
@@ -112,12 +136,15 @@ script
 
 (defn -main [& args]
   (let [[command-name & args] args
-        [command nargs]       (commands command-name)]
+        [command nargs]       (commands command-name)
+        [min_args max_args]   (if (number? nargs) [nargs nargs] nargs)]
     (cond
      (nil? command)
        (println help-text)
-     (not= (count args) nargs)
-       (println (str command-name " needs " nargs " arguments"))
+     (or (and (number? min_args) (< (count args) min_args))
+         (and (number? max_args) (> (count args) max_args)))
+       (println (str command-name " needs " min_args
+                                  " to " max_args  " arguments"))
      :else
        (try
          (apply command args)
