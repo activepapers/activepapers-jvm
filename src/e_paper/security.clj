@@ -10,7 +10,7 @@
 ; can bind it to false, and it does so only through the macro
 ; with-full-permissions.
 ; 
-(def *access-control* true)
+(def ^{:dynamic true} *access-control* true)
 
 ;
 ; A SecurityManager that is active only when *access-control* is true.
