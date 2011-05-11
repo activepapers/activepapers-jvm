@@ -8,6 +8,11 @@
   (:import java.io.File))
 
 ;
+; Bind this var to true for getting an execution trace on the console
+;
+(def ^{:dynamic true} *print-calclet-execution-trace* false)
+
+;
 ; Run calclets from a paper
 ;
 (defn- write-jar
@@ -82,6 +87,8 @@
                (#{"script-calclet"
                   "program-calclet"}
                 (hdf5/read-attribute calclet "e-paper-datatype"))))
+  (when *print-calclet-execution-trace*
+    (println "Running calclet" (hdf5/path calclet)))
   (security/with-full-permissions
     (if (= (hdf5/read-attribute calclet "e-paper-datatype")
            "program-calclet")
@@ -121,11 +128,34 @@
                           (catch javax.script.ScriptException e
                             (println (str "Exception in calclet "
                                           (hdf5/name calclet) ":"))
-                            (println (.getMessage e))))))))))))
+                            (println (.getMessage e)))))))))))
+  (when *print-calclet-execution-trace*
+    (println "Calclet" (hdf5/path calclet) "done")))
 
 ;
-; Re-create a paper from its primary items
+; Rebuild data by running calclets
 ;
+(defn- calclets-for-items
+  [paper items]
+  (set (for [item items]
+         (hdf5/read-attribute item "e-paper-generating-calclet"))))
+
+(defn update
+  [paper changed-items]
+  (assert (set? changed-items))
+  (letfn [(do-update [paper changed-items run-calclets]
+            (when (seq changed-items)
+              (let [next-generation (dependencies/dependents
+                                         paper changed-items)
+                    calclets        (calclets-for-items paper next-generation)
+                    calclets        (clojure.set/difference
+                                          calclets run-calclets)]
+                (doseq [calclet calclets]
+                  (run-calclet (hdf5/get-dataset paper calclet)))
+                (do-update paper next-generation
+                           (clojure.set/union run-calclets calclets)))))]
+    (do-update paper changed-items #{})))
+
 (defn rebuild-from-primary-items
   [paper clone-file]
   (let [[primary & recalc] (dependencies/dependency-hierarchy paper)
@@ -134,10 +164,7 @@
       (doseq [item primary]
         (hdf5/create-dataset clone (subs (hdf5/path item) 1) item))
       (doseq [items recalc]
-        (let [calclets (set (for [item items]
-                              (hdf5/read
-                               (hdf5/get-attribute
-                                item "e-paper-generating-calclet"))))]
-          (doseq [calclet calclets]
-            (run-calclet (hdf5/get-dataset clone calclet)))))
+        (doseq [calclet (calclets-for-items paper items)]
+          (run-calclet (hdf5/get-dataset clone calclet))))
       (finally (storage/close clone)))))
+

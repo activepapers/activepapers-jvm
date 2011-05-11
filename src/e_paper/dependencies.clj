@@ -90,5 +90,11 @@
             (throw (Exception. "cyclic dependencies")))
           (recur (conj levels next) known unknown))))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;(def paper (storage/open (java.io.File.  "/Users/hinsen/projects/e-paper/examples/clojure-prog/clojure_paper.h5")))
+(defn dependents
+  "Find the dependents of items (a set), i.e. the datasets that need to be
+   recomputed when items change."
+  [paper items]
+  (assert (set? items))
+  (set (filter (fn [x] (not (empty? (clojure.set/intersection
+                                    (set (dependencies x)) items))))
+               (e-paper-items paper))))
