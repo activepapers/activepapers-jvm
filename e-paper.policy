@@ -1,4 +1,4 @@
-/* AUTOMATICALLY GENERATED ON Wed Apr 13 16:40:34 CEST 2011*/
+/* AUTOMATICALLY GENERATED ON Thu May 12 15:48:39 CEST 2011*/
 /* DO NOT EDIT */
 
 grant {
@@ -15,5 +15,13 @@ grant {
   permission java.lang.RuntimePermission "accessClassInPackage.*";
   permission java.lang.RuntimePermission "accessDeclaredMembers";
   permission java.lang.RuntimePermission "modifyThread";
+  permission java.lang.RuntimePermission "shutdownHooks";
+  permission java.lang.RuntimePermission "loadLibrary.awt";
+  permission java.awt.AWTPermission "showWindowWithoutWarningBanner";
+  permission java.awt.AWTPermission "listenToAllAWTEvents";
+  permission java.awt.AWTPermission "replaceKeyboardFocusManager";
+  permission java.awt.AWTPermission "toolkitModality";
+  permission java.awt.AWTPermission "watchMousePointer";
+  permission java.awt.AWTPermission "createRobot";
 };
 
