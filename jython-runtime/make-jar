@@ -1,0 +1,6 @@
+#!/bin/bash
+export EPAPER=/Users/hinsen/projects/e-paper
+
+cd $EPAPER/jython-runtime
+jar cf jython-runtime.jar lib
+mv jython-runtime.jar $EPAPER/jars
