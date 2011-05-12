@@ -15,7 +15,8 @@ public class launcher{
     public static void main(String[] args) {
         try {
             ClassLoader loader = Thread.currentThread().getContextClassLoader();
-            IPersistentMap bindings = RT.map(Compiler.LOADER, loader);
+            IPersistentMap bindings = RT.map(Compiler.LOADER, loader,
+                                             RT.USE_CONTEXT_CLASSLOADER, RT.T);
             boolean pushed = true;
             try {
                 Var.pushThreadBindings(bindings);
