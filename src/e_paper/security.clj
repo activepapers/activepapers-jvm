@@ -71,7 +71,7 @@
   (let [app-cl    (.getClassLoader clojure.lang.RT)]
     (proxy [java.net.URLClassLoader]
            [(into-array (map #(.toURL %) jar-files))
-            (.getParent app-cl)]
+            app-cl]
       (findClass
        [name]
        (if (some (partial starts-with name)
