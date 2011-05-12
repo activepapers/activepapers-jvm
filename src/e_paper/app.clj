@@ -17,6 +17,15 @@
   (when-not [(.exists (File. filename))]
     (error-exit "File " filename " not found")))
 
+(defn print-ds
+  [filename dataset-name]
+  (assert-file-exists filename)
+  (let [paper (storage/open (File. filename) :read-write)
+        ds    (storage/get-data paper dataset-name)]
+    (when (nil? ds)
+      (error-exit "No dataset " dataset-name))
+    (println (hdf5/read ds))))
+
 (defn run-calclet
   [filename calclet-name]
   (assert-file-exists filename)
@@ -156,7 +165,8 @@
       "script"        [script 1]
       "run_calclet"   [run-calclet 2]
       "update"        [update [1 nil]]
-      "make_library"  [make-library [1 nil]]})
+      "make_library"  [make-library [1 nil]]
+      "print"         [print-ds 2]})
 
 (def help-text
 "Commands:
@@ -170,6 +180,9 @@ make_library <e-paper> <jar-spec> ...
   name=jar_file_name, where name is the dataset name in
   the code section of the e-paper.
 
+print <e-paper> <dataset>
+  prints the contents of a dataset
+
 rebuild <e-paper> <rebuilt-e-paper>
   copies all non-dependent items from <e-paper> to <rebuilt-e-paper>
   and runs the calclets to rebuild the dependent items
@@ -180,6 +193,7 @@ run_calclet <e-paper> <calclet-name>
 
 repl
    start a Clojure repl with the e-paper classpath
+   (This is a development tool.)
 
 script
   run a Clojure script in the e-paper environment, usually to
@@ -187,6 +201,7 @@ script
 
 swank-server
    start a swank server with the e-paper classpath
+   (This is a development tool.)
 
 update <e-paper> <dataset>=<value> ...
   updates the specified datasets and runs all calclets required
