@@ -1,0 +1,6 @@
+#!/bin/bash
+export EPAPER=/Users/hinsen/projects/e-paper
+
+cd $EPAPER/jython-plotting
+jar cf jython-plotting.jar Lib
+mv *.jar $EPAPER/jars
