@@ -1,6 +1,7 @@
 (ns e-paper.app
   (:gen-class)
   (:require [clojure.main])
+  (:require [clojure.string :as str])
   (:require [clj-hdf5.core :as hdf5])
   (:require [e-paper.storage :as storage])
   (:require [e-paper.dependencies :as deps])
@@ -17,28 +18,32 @@
   (when-not [(.exists (File. filename))]
     (error-exit "File " filename " not found")))
 
+(defn open-paper
+  [paper mode]
+  (cond (string? paper)    (do (assert-file-exists paper)
+                               (storage/open (File. paper) mode))
+        (hdf5/node? paper) paper
+        :else              nil))
+
 (defn print-ds
-  [filename dataset-name]
-  (assert-file-exists filename)
-  (let [paper (storage/open (File. filename) :read-write)
+  [paper dataset-name]
+  (let [paper (open-paper paper :read-write)
         ds    (storage/get-data paper dataset-name)]
     (when (nil? ds)
       (error-exit "No dataset " dataset-name))
     (println (hdf5/read ds))))
 
 (defn run-calclet
-  [filename calclet-name]
-  (assert-file-exists filename)
-  (let [paper   (storage/open (File. filename) :read-write)
+  [paper calclet-name]
+  (let [paper   (open-paper paper :read-write)
         calclet (storage/get-code paper calclet-name)]
     (when (nil? calclet)
       (error-exit "No calclet " calclet-name))
     (run/run-calclet calclet)))
 
 (defn rebuild
-  [in-filename out-filename]
-  (assert-file-exists in-filename)
-  (run/rebuild-from-primary-items (storage/open (File. in-filename))
+  [in-paper out-filename]
+  (run/rebuild-from-primary-items (open-paper in-paper :read-only)
                                   (File. out-filename)))
 
 (defn script
@@ -51,9 +56,8 @@
       (println (.toString e)))))
 
 (defn analyze
-  [filename]
-  (assert-file-exists filename)
-  (let [paper (storage/open (File. filename))]
+  [paper]
+  (let [paper (open-paper paper :read-only)]
 
     (when-let [non-e-paper (deps/non-e-paper-items paper)]
       (println "HDF5 items not handled by e-paper:")
@@ -85,7 +89,7 @@
                   dependencies (filter (fn [n] (not (= calclet n)))
                                        (map hdf5/path (deps/dependencies node)))]
               (println (str "    dependencies: "
-                            (clojure.string/join ", " dependencies)))
+                            (str/join ", " dependencies)))
               (println (str "    calclet: "
                             calclet))))
           )))))
@@ -116,14 +120,14 @@
                   identity]
                  [#"([a-zA-Z0-9-_/]+)=\"(.*)\""
                   identity]
-                 [#"([a-zA-Z0-9-_/]+)=(\[-?[0-9]+([ ]+-?[0-9]+)*\])"
+                 [#"([a-zA-Z0-9-_/]+)=(\[-?[0-9]+(,-?[0-9]+)*\])"
                   (fn [s] (vec (map #(Long/parseLong %)
-                                   (clojure.string/split
-                                    (subs s 1 (dec (count s))) #"[ ]+"))))]
-                 [#"([a-zA-Z0-9-_/]+)=(\[-?[0-9]+(\.[0-9]*)?([ ]+-?[0-9]+(\.[0-9]*)?)*\])"
+                                   (str/split
+                                    (subs s 1 (dec (count s))) #","))))]
+                 [#"([a-zA-Z0-9-_/]+)=(\[-?[0-9]+(\.[0-9]*)?(,-?[0-9]+(\.[0-9]*)?)*\])"
                   (fn [s] (vec (map #(Double/parseDouble %)
-                                   (clojure.string/split
-                                    (subs s 1 (dec (count s))) #"[ ]+"))))]]
+                                   (str/split
+                                    (subs s 1 (dec (count s))) #","))))]]
         parse   (fn [[regexp convert]]
                   (when-let [[_ name value]
                              (re-matches regexp dataset-spec)]
@@ -134,9 +138,8 @@
     match))
 
 (defn update
-  [filename & dataset-specs]
-  (assert-file-exists filename)
-  (let [paper (storage/open (File. filename) :read-write)]
+  [paper & dataset-specs]
+  (let [paper (open-paper paper :read-write)]
     (run/update paper 
       (set (for [[ds-name value] (map parse-dataset-spec dataset-specs)]
              (let [ds (storage/get-data paper ds-name)]
@@ -149,24 +152,13 @@
                                " owned by calclet " creator)))
                (storage/create-data paper ds-name value)))))))
 
-; Just requiring swank.swank causes a severe delay at the end of the
+; Merely requiring swank.swank causes a severe delay at the end of the
 ; program, so do this only when the swank server is really requested.
 (defn swank-server
   []
   (eval '(do
            (require 'swank.swank)
            (swank.swank/start-repl))))
-
-(def commands
-     {"repl"          [clojure.main/main 0]
-      "swank-server"  [swank-server 0]
-      "analyze"       [analyze 1]
-      "rebuild"       [rebuild 2]
-      "script"        [script 1]
-      "run_calclet"   [run-calclet 2]
-      "update"        [update [1 nil]]
-      "make_library"  [make-library [1 nil]]
-      "print"         [print-ds 2]})
 
 (def help-text
 "Commands:
@@ -179,6 +171,11 @@ make_library <e-paper> <jar-spec> ...
   collection of jar files. Each jar-spec has the form
   name=jar_file_name, where name is the dataset name in
   the code section of the e-paper.
+
+open <e-paper>
+  opens e-paper and accepts a sequence of commands to work
+  on it. This is faster than running the e-paper tool repeatedly
+  for each command.
 
 print <e-paper> <dataset>
   prints the contents of a dataset
@@ -207,6 +204,103 @@ update <e-paper> <dataset>=<value> ...
   updates the specified datasets and runs all calclets required
   to re-calculate dependent datasets
 ")
+
+(def help-text-open
+"Commands:
+
+analyze <e-paper>
+  show the dependencies between the datasets in <e-paper>
+
+exit
+  exit from the command interpreter
+
+print <e-paper> <dataset>
+  prints the contents of a dataset
+
+rebuild <e-paper> <rebuilt-e-paper>
+  copies all non-dependent items from <e-paper> to <rebuilt-e-paper>
+  and runs the calclets to rebuild the dependent items
+
+run_calclet <e-paper> <calclet-name>
+  run the named calclet from the e-paper
+  (provide the calclet name without the prefix /code)
+
+update <e-paper> <dataset>=<value> ...
+  updates the specified datasets and runs all calclets required
+  to re-calculate dependent datasets
+
+<calclet-name>
+  run the named calclet from the e-paper
+")
+
+(def open-commands
+     {"analyze"     [analyze 1]
+      "rebuild"     [rebuild 2]
+      "run_calclet" [run-calclet 2]
+      "update"      [update [1 nil]]
+      "print"       [print-ds 2]})
+
+(defn open
+  [filename]
+  (assert-file-exists filename)
+  (let [paper (storage/open (File. filename) :read-write)]
+    (letfn [(prompt-for-line []
+              (printf "%s: " filename)
+              (flush)
+              (read-line))
+            (next-line []
+              (let [line (prompt-for-line)]
+                (if (nil? line)
+                  (throw (Exception.))
+                  (str/split (str/trim line) #" +"))))]
+      (try
+        (loop []
+          (let [input        (next-line)
+                command-name (first input)
+                args         (rest input)]
+            (when (pos? (count command-name))
+              (cond (or (= command-name "help") (= command-name "?"))
+                    (println help-text-open)
+                    (= command-name "exit")
+                    (throw (Exception.))
+                    :else
+                    (let [[command nargs]     (open-commands command-name)
+                          [min_args max_args] (if (number? nargs)
+                                                [nargs nargs]
+                                                nargs)]
+                      (cond (nil? command)
+                            (if (and (not (nil? (storage/get-code
+                                                 paper command-name)))
+                                     (zero? (count args)))
+                              (run-calclet paper command-name)
+                              (println help-text-open))
+                            (or (and (number? min_args)
+                                     (< (inc (count args)) min_args))
+                                (and (number? max_args)
+                                     (> (inc (count args)) max_args)))
+                            (println (str command-name " needs " min_args
+                                          " to " max_args  " arguments"))
+                            :else
+                            (try
+                              (binding [run/*print-calclet-execution-trace*
+                                        true]
+                                (apply command (cons paper args)))
+                              (catch Exception e nil))))))
+            (recur)))
+        (catch Exception e nil))
+      (storage/close paper))))
+
+(def commands
+     {"repl"          [clojure.main/main 0]
+      "swank-server"  [swank-server 0]
+      "analyze"       [analyze 1]
+      "rebuild"       [rebuild 2]
+      "script"        [script 1]
+      "run_calclet"   [run-calclet 2]
+      "update"        [update [1 nil]]
+      "make_library"  [make-library [1 nil]]
+      "print"         [print-ds 2]
+      "open"          [open 1]})
 
 (defn -main [& args]
   (let [[command-name & opts-and-args] args
