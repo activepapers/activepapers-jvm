@@ -228,6 +228,10 @@ run_calclet <e-paper> <calclet-name>
 update <e-paper> <dataset>=<value> ...
   updates the specified datasets and runs all calclets required
   to re-calculate dependent datasets
+  A value can be an integer, a float, or a string, or an
+  array (1d) of integers or an array (1d) of floats. Array elements are
+  enclosed in square brackets and separated by commas. Spaces are not allowed
+  inside array values!
 
 <calclet-name>
   run the named calclet from the e-paper
