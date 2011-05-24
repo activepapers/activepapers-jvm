@@ -26,14 +26,11 @@
     (:require [swank.swank]))
   (swank.swank/start-repl))
 
-; The real calclets are run immediately.
-(execution/run-calclet
- (auth/clojure-script paper jars
-   (ns generate-input
-     (:require [e-paper-runtime.data :as data]))
-   (data/create-data "time" (vec (range 0. 10. 0.1)))
-   (data/create-data "frequency" 0.2)))
+; Input parameters
+(ep/create-data paper "frequency" 0.2)
+(ep/create-data paper "time" (vec (range 0. 10. 0.1)))
 
+; The real calclets are run immediately.
 (execution/run-calclet
  (auth/clojure-script paper jars
    (ns calc-sine
