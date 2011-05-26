@@ -105,7 +105,7 @@ public final class ExecutablePaperRef {
             if (dependency_list != null)
                 break;
         }
-        if (dependency_list != null)
+        if (dependency_list != null && !dependency_list.contains(ds_name))
             dependency_list.add(ds_name);
     }
 
