@@ -1,5 +1,6 @@
 #!/bin/bash
 export EPAPER=$HOME/projects/e-paper
+export EPAPER_LIBRARY=$EPAPER/e-paper-library
 export RUNTIME=$EPAPER/clojure-runtime
 export BUILD=$RUNTIME/build
 
@@ -13,7 +14,7 @@ javac -cp $EPAPER/jars/clojure-1.2.1.jar launcher.java
 mv launcher.class $BUILD/clojure/
 
 cd $RUNTIME
-java -cp $EPAPER/jars/clojure-1.2.1.jar:$EPAPER/jars/clj-hdf5-0.1.jar:$EPAPER/jars/cisd-jhdf5-batteries_included_lin_win_mac.jar:$EPAPER/src:$EPAPER/runtime/src:$RUNTIME/src clojure.main aot-compile.clj $BUILD
+java -cp $EPAPER/jars/clojure-1.2.1.jar:$EPAPER/jars/clj-hdf5-0.1.jar:$EPAPER/jars/cisd-jhdf5-batteries_included_lin_win_mac.jar:$EPAPER/lib/e-paper.jar:$EPAPER_LIBRARY/e-paper-runtime.jar:$RUNTIME/src clojure.main aot-compile.clj $BUILD
 
 cd $BUILD
 jar cf $EPAPER/jars/clojure-runtime.jar clojure e_paper_runtime
