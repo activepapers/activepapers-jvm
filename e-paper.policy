@@ -1,4 +1,4 @@
-/* AUTOMATICALLY GENERATED ON Fri May 20 15:50:53 CEST 2011*/
+/* AUTOMATICALLY GENERATED ON Wed May 25 16:40:58 CEST 2011*/
 /* DO NOT EDIT */
 
 grant {
@@ -27,5 +27,14 @@ grant {
   permission java.awt.AWTPermission "accessClipboard";
   permission java.lang.RuntimePermission "loadLibrary.dcpr";
   permission java.io.FilePermission "<<ALL FILES>>", "read";
+  permission java.util.PropertyPermission "jline.UnixTerminal.input.encoding", "write";
+  permission java.util.PropertyPermission "jline.WindowsTerminal.input.encoding", "write";
+  permission java.lang.RuntimePermission "readFileDescriptor";
+  permission java.security.SecurityPermission "getProperty.networkaddress.cache.ttl";
+  permission java.security.SecurityPermission "getProperty.networkaddress.cache.negative.ttl";
+  permission java.lang.RuntimePermission "loadLibrary./usr/lib/jvm/java-6-openjdk/jre/lib/i386/xawt/libmawt.so";
+  permission java.io.FilePermission "/tmp/-", "write, delete";
+  permission java.util.PropertyPermission "javax.accessibility.assistive_technologies", "read, write";
+  permission java.lang.RuntimePermission "loadLibrary.lcms";
 };
 
