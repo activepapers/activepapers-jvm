@@ -6,12 +6,13 @@
   (:require [e-paper.storage :as storage])
   (:require [e-paper.dependencies :as deps])
   (:require [e-paper.execution :as run])
+  (:require [e-paper.security :as security])
   (:import java.io.File))
 
 (defn error-exit
   [& items]
   (.println System/err (apply str items))
-  (throw (Exception.)))
+  (throw (Exception. "error-exit")))
 
 (defn assert-file-exists
   [filename]
@@ -289,7 +290,9 @@ update <e-paper> <dataset>=<value> ...
                               (binding [run/*print-calclet-execution-trace*
                                         true]
                                 (apply command (cons paper args)))
-                              (catch Exception e nil))))))
+                              (catch Exception e
+                                (when-not (= "error-exit" (.getMessage e))
+                                  (throw e))))))))
             (recur)))
         (catch Exception e nil))
       (storage/close paper))))
@@ -323,4 +326,6 @@ update <e-paper> <dataset>=<value> ...
          (binding [run/*print-calclet-execution-trace*
                      (contains? (set opts) "-t")]
            (apply command args))
-         (catch Exception e nil)) )))
+         (catch Exception e
+           (when-not (= "error-exit" (.getMessage e))
+             (throw e)))))))
