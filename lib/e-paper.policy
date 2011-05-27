@@ -1,4 +1,4 @@
-/* AUTOMATICALLY GENERATED ON Wed May 25 16:40:58 CEST 2011*/
+/* AUTOMATICALLY GENERATED ON Thu May 26 09:24:42 CEST 2011*/
 /* DO NOT EDIT */
 
 grant {
@@ -36,5 +36,6 @@ grant {
   permission java.io.FilePermission "/tmp/-", "write, delete";
   permission java.util.PropertyPermission "javax.accessibility.assistive_technologies", "read, write";
   permission java.lang.RuntimePermission "loadLibrary.lcms";
+  permission java.lang.RuntimePermission "loadLibrary./tmp/-";
 };
 
