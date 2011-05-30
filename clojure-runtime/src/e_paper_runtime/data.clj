@@ -22,11 +22,14 @@
 ; Creation of a new dataset, with all the required attributes.
 ;
 (defn create-data
-  [name data]
-  (let [node (DataAccess/createData name)
-        clj-node (hdf5/make-hdf-node (.getWriter node) (.getPath node))
-        group (hdf5/parent clj-node)
-        ds (hdf5/create-dataset group name data)]
-    (DataAccess/finalizeData node)
-    ds))
+  ([name data]
+   (let [node (DataAccess/createData name)
+         clj-node (hdf5/make-hdf-node (.getWriter node) (.getPath node))
+         group (hdf5/parent clj-node)
+         ds (hdf5/create-dataset group name data)]
+     (DataAccess/finalizeData node)
+     ds))
+  ([name data data-model-name]
+     (let [ds (create-data name data)]
+       (hdf5/create-attribute ds "e-paper-domain-data-model" data-model-name))))
 
