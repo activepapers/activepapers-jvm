@@ -12,10 +12,9 @@ import java.util.ArrayList;
 
 public final class DataAccess {
 
-    public static HDF5Node getData(String name) {
+    public static HDF5Node getItem(String path) {
         IHDF5Reader reader = ExecutablePaperRef.getReader();
         IHDF5Writer writer = ExecutablePaperRef.getWriter();
-        String path = "/data/".concat(name);
         if (reader == null)
             throw new RuntimeException("no e-paper open");
         if (reader.exists(path)) {
@@ -27,6 +26,16 @@ public final class DataAccess {
         }
         else
             throw new RuntimeException("HDF5 path ".concat(path).concat(" does not exist"));
+    }
+
+    public static HDF5Node getData(String name) {
+        String path = "/data/".concat(name);
+        return getItem(path);
+    }
+
+    public static HDF5Node getText(String name) {
+        String path = "/text/".concat(name);
+        return getItem(path);
     }
 
     public static HDF5Node createData(String name) {
