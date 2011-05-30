@@ -154,9 +154,21 @@
   (dereference (hdf5/lookup paper (str "data/" name))))
 
 (defn create-data
-  [paper name data]
-  (let [ds (hdf5/create-dataset (hdf5/lookup paper "data") name data)]
-    (hdf5/create-attribute ds "e-paper-datatype" "data")
-    (hdf5/create-attribute ds "e-paper-generating-program" "")
-    (hdf5/create-attribute ds "e-paper-dependencies" [""])
+  ([paper name data]
+   (let [ds (hdf5/create-dataset (hdf5/lookup paper "data") name data)]
+     (hdf5/create-attribute ds "e-paper-datatype" "data")
+     (hdf5/create-attribute ds "e-paper-generating-program" "")
+     (hdf5/create-attribute ds "e-paper-dependencies" [""])
+     ds))
+  ([paper name data data-model-name]
+   (let [ds (create-data paper name data)]
+     (hdf5/create-attribute ds "e-paper-domain-data-model" data-model-name))))
+
+(defn create-text
+  [paper name format text]
+  (assert (string? format))
+  (assert (string? text))
+  (let [ds (hdf5/create-dataset (hdf5/lookup paper "text") name text)]
+    (hdf5/create-attribute ds "e-paper-datatype" "text")
+    (hdf5/create-attribute ds "e-paper-text-format" format)
     ds))
