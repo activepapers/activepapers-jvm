@@ -1,0 +1,18 @@
+#!/bin/bash
+export EPAPER=$HOME/projects/e-paper
+export EPAPER_LIBRARY=$EPAPER/e-paper-library
+export RENDERER=$EPAPER/markdown-renderer
+export BUILD=$RENDERER/build
+
+export JHDF5=${HOME}/Development/cisd-jhdf5/lib/batteries_included/cisd-jhdf5-batteries_included_lin_win_mac.jar
+
+cd $RENDERER
+rm -rf build
+mkdir build
+
+cd $RENDERER/src
+javac -cp $EPAPER/jars/markdownj-1.0.2b4-0.3.0.jar:$EPAPER/jars/cobra.jar:$EPAPER/jars/js.jar:$EPAPER_LIBRARY/e-paper-runtime.jar:$JHDF5 renderer.java
+mv renderer.class $BUILD/
+
+cd $BUILD
+jar cf $EPAPER/jars/markdown-renderer.jar renderer.class
