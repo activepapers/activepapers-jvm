@@ -9,11 +9,11 @@
 ; write in reasonably sized chunks.
 
 (ns build-random-example
-  (:require [e-paper.storage :as ep])
-  (:use [e-paper.authoring :only (script, clojure-script)])
-  (:use [e-paper.execution :only (run-calclet)]))
+  (:require [active-paper.storage :as ep])
+  (:use [active-paper.authoring :only (script, clojure-script)])
+  (:use [active-paper.execution :only (run-calclet)]))
 
-; Create an empty e-paper
+; Create an empty active paper
 (def paper (ep/create (java.io.File. "random_numbers.h5")))
 
 ; Add references to the jar files from tje libraries used by the calclets
@@ -28,7 +28,7 @@
 (run-calclet
  (script paper "draw_random_numbers" "python" jython-jars
 "
-from e_paper_data import readData, createData, writeData, array_spec
+from active_paper_data import readData, createData, writeData, array_spec
 import random
 
 random.seed(readData(\"random_seed\"))
@@ -43,7 +43,7 @@ for i in xrange(nsample):
 (run-calclet
  (script paper "calc_statistics" "python" jython-jars
 "
-from e_paper_data import readData, createData
+from active_paper_data import readData, createData
 import HDF5
 import math
 
@@ -74,7 +74,7 @@ createData(\"standard_deviation\", math.sqrt(acc.variance))
 ; Show a histogram using Incanter
 (clojure-script paper incanter-jars
   (ns view-histogram
-    (:use [e-paper-runtime.data])
+    (:use [active-paper-runtime.data])
     (:use [incanter.core])
     (:use [incanter.charts]))
   (view (histogram (read-data "random_numbers"))))
@@ -86,11 +86,11 @@ createData(\"standard_deviation\", math.sqrt(acc.variance))
   (ns repl
     (:require clojure.main)
     (:require [clj-hdf5.core :as hdf5])
-    (:use [e-paper-runtime.data])
+    (:use [active-paper-runtime.data])
     (:use [incanter.core])
     (:use [incanter.charts])
     (:use [incanter.stats]))
   (clojure.main/repl))
 
-; Close the e-paper file
+; Close the active paper file
 (ep/close paper)

@@ -1,9 +1,9 @@
 (ns build-incanter-example
-  (:require [e-paper.storage :as ep])
-  (:use [e-paper.authoring :only (clojure-script)])
-  (:use [e-paper.execution :only (run-calclet)]))
+  (:require [active-paper.storage :as ep])
+  (:use [active-paper.authoring :only (clojure-script)])
+  (:use [active-paper.execution :only (run-calclet)]))
 
-; Create an empty e-paper
+; Create an empty active paper
 (def paper (ep/create (java.io.File. "incanter_example.h5")))
 
 ; Add references to the jar files from the Incanter library
@@ -24,7 +24,7 @@
 (run-calclet
  (clojure-script paper jars
    (ns calc-sine
-     (:use [e-paper-runtime.data]))
+     (:use [active-paper-runtime.data]))
    (let [time      (read-data "time")
          frequency (read-data "frequency")
          sine      (map #(Math/sin (* 2 Math/PI frequency %)) time)]
@@ -34,7 +34,7 @@
 ; line plot of "time" vs. "sine".
 (clojure-script paper jars
   (ns view-sine
-    (:use [e-paper-runtime.data])
+    (:use [active-paper-runtime.data])
     (:use [incanter.core])
     (:use [incanter.charts]))
   (view (xy-plot (read-data "time") (read-data "sine")
@@ -44,24 +44,24 @@
 ; representation of "time" vs. "sine".
 (clojure-script paper jars
   (ns sine-table
-    (:use [e-paper-runtime.data])
+    (:use [active-paper-runtime.data])
     (:use [incanter.core])
     (:use [incanter.charts]))
   (view (col-names (conj-cols (read-data "time") (read-data "sine"))
                    ["time" "sine"])))
 
 ; Define a calclet that runs a Clojure read-eval-print loop (REPL) in
-; the environment of this e-paper. The REPL allows interactive data
+; the environment of this active paper. The REPL allows interactive data
 ; analysis and line-by-line development of calclets.
 (clojure-script paper jars
   (ns repl
     (:require clojure.main)
     (:require [clj-hdf5.core :as hdf5])
-    (:use [e-paper-runtime.data])
+    (:use [active-paper-runtime.data])
     (:use [incanter.core])
     (:use [incanter.charts])
     (:use [incanter.stats]))
   (clojure.main/repl))
 
-; Close the e-paper file.
+; Close the active paper file.
 (ep/close paper)

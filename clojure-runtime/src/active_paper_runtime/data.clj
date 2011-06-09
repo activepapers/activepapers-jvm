@@ -1,8 +1,8 @@
-(ns e-paper-runtime.data
+(ns active-paper-runtime.data
  (:require [clj-hdf5.core :as hdf5])
-  (:import e_paper.ExecutablePaperRef)
-  (:import e_paper_runtime.HDF5Node)
-  (:import e_paper_runtime.DataAccess)
+  (:import active_paper.ActivePaperRef)
+  (:import active_paper_runtime.HDF5Node)
+  (:import active_paper_runtime.DataAccess)
   (:import java.io.File))
 
 ;
@@ -31,5 +31,6 @@
      ds))
   ([name data data-model-name]
      (let [ds (create-data name data)]
-       (hdf5/create-attribute ds "e-paper-domain-data-model" data-model-name))))
+       (hdf5/create-attribute ds
+            "active-paper-domain-data-model" data-model-name))))
 

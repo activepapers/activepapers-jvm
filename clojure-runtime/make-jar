@@ -1,20 +1,20 @@
 #!/bin/bash
-export EPAPER=$HOME/projects/e-paper
-export EPAPER_LIBRARY=$EPAPER/e-paper-library
-export RUNTIME=$EPAPER/clojure-runtime
+export APAPER=$HOME/projects/e-paper
+export ACTIVE_PAPER_LIBRARY=$APAPER/active-paper-library
+export RUNTIME=$APAPER/clojure-runtime
 export BUILD=$RUNTIME/build
 
 cd $RUNTIME
 rm -rf build
 mkdir -p build/clojure
-mkdir -p build/e_paper_runtime
+mkdir -p build/active_paper_runtime
 
 cd $RUNTIME/src/clojure
-javac -cp $EPAPER/jars/clojure-1.2.1.jar launcher.java
+javac -cp $APAPER/jars/clojure-1.2.1.jar launcher.java
 mv launcher.class $BUILD/clojure/
 
 cd $RUNTIME
-java -cp $EPAPER/jars/clojure-1.2.1.jar:$EPAPER/jars/clj-hdf5-0.1.jar:$EPAPER/jars/cisd-jhdf5-batteries_included_lin_win_mac.jar:$EPAPER/lib/e-paper.jar:$EPAPER_LIBRARY/e-paper-runtime.jar:$RUNTIME/src clojure.main aot-compile.clj $BUILD
+java -cp $APAPER/jars/clojure-1.2.1.jar:$APAPER/jars/clj-hdf5-0.1.jar:$APAPER/jars/cisd-jhdf5-batteries_included_lin_win_mac.jar:$APAPER/lib/active-paper.jar:$ACTIVE_PAPER_LIBRARY/active-paper-runtime.jar:$RUNTIME/src clojure.main aot-compile.clj $BUILD
 
 cd $BUILD
-jar cf $EPAPER/jars/clojure-runtime.jar clojure e_paper_runtime
+jar cf $APAPER/jars/clojure-runtime.jar clojure active_paper_runtime

@@ -1,10 +1,10 @@
-(ns e-paper.execution
+(ns active-paper.execution
   (:require [clj-hdf5.core :as hdf5])
-  (:require [e-paper.storage :as storage])
-  (:require [e-paper.dependencies :as dependencies])
-  (:require [e-paper.security :as security])
-  (:require [e-paper.utility :as utility])
-  (:import e_paper.ExecutablePaperRef)
+  (:require [active-paper.storage :as storage])
+  (:require [active-paper.dependencies :as dependencies])
+  (:require [active-paper.security :as security])
+  (:require [active-paper.utility :as utility])
+  (:import active_paper.ActivePaperRef)
   (:import java.io.File))
 
 ;
@@ -56,41 +56,41 @@
                          jar-paths)
         jar-files   (reduce write-jar '() jars)
         temp-files  (concat temp-files jar-files)
-        jar-files   (conj jar-files (File. storage/*e-paper-library*
-                                           "e-paper-runtime.jar"))]
+        jar-files   (conj jar-files (File. storage/*active-paper-library*
+                                           "active-paper-runtime.jar"))]
     (try
       (let [cl  (security/make-class-loader jar-files)
             ccl (.getContextClassLoader (Thread/currentThread))]
         (try
           (.setContextClassLoader (Thread/currentThread) cl)
-          (ExecutablePaperRef/setAccessors cl
+          (ActivePaperRef/setAccessors cl
              (:accessor code)
              (if (isa? (class (:accessor code))
                        ch.systemsx.cisd.hdf5.IHDF5Writer)
                (:accessor code)
                nil))
-          (ExecutablePaperRef/setCurrentCalclet cl (:path code))
-          (ExecutablePaperRef/initializeDependencyList cl)
+          (ActivePaperRef/setCurrentCalclet cl (:path code))
+          (ActivePaperRef/initializeDependencyList cl)
           (exec cl)
           (finally
-           (ExecutablePaperRef/clearDependencyList cl)
-           (ExecutablePaperRef/setCurrentCalclet cl nil)
-           (ExecutablePaperRef/setAccessors cl nil nil)
+           (ActivePaperRef/clearDependencyList cl)
+           (ActivePaperRef/setCurrentCalclet cl nil)
+           (ActivePaperRef/setAccessors cl nil nil)
            (.setContextClassLoader (Thread/currentThread) cl))))
       (finally
        (dorun (map #(.delete %) temp-files))))))
 
 (defn run-calclet
-  "Run a calclet within an e-paper."
+  "Run a calclet within an active-paper."
   [calclet]
   (assert (and (hdf5/node? calclet)
                (#{"script-calclet"
                   "program-calclet"}
-                (hdf5/read-attribute calclet "e-paper-datatype"))))
+                (hdf5/read-attribute calclet "active-paper-datatype"))))
   (when *print-calclet-execution-trace*
     (println "Running calclet" (hdf5/path calclet)))
   (security/with-full-permissions
-    (if (= (hdf5/read-attribute calclet "e-paper-datatype")
+    (if (= (hdf5/read-attribute calclet "active-paper-datatype")
            "program-calclet")
       ; Run program with arguments using the Java calling conventions
       (let [class-name  (hdf5/read
@@ -138,7 +138,7 @@
 (defn- calclets-for-items
   [paper items]
   (set (for [item items]
-         (hdf5/read-attribute item "e-paper-generating-calclet"))))
+         (hdf5/read-attribute item "active-paper-generating-calclet"))))
 
 (defn update
   [paper changed-items]

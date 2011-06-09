@@ -1,7 +1,7 @@
 (ns clojure-prog.assemble
-  (:require [e-paper.storage :as ep])
-  (:require [e-paper.authoring :as auth])
-  (:require [e-paper.execution :as execution])
+  (:require [active-paper.storage :as ep])
+  (:require [active-paper.authoring :as auth])
+  (:require [active-paper.execution :as execution])
   (:import java.io.File))
 
 (def dir (File. "/Users/hinsen/projects/e-paper/examples/clojure-prog/"))
@@ -14,14 +14,14 @@
 (auth/clojure-script paper jars
   (ns repl
     (:require clojure.main)
-    (:require [e-paper-runtime.data :as data])
+    (:require [active-paper-runtime.data :as data])
     (:require [clj-hdf5.core :as hdf5]))
   (clojure.main/repl))
 
 (auth/clojure-script paper jars
   (ns swank-server)
   (ns user
-    (:require [e-paper-runtime.data :as data])
+    (:require [active-paper-runtime.data :as data])
     (:require [clj-hdf5.core :as hdf5])
     (:require [swank.swank]))
   (swank.swank/start-repl))
@@ -34,7 +34,7 @@
 (execution/run-calclet
  (auth/clojure-script paper jars
    (ns calc-sine
-     (:require [e-paper-runtime.data :as data])
+     (:require [active-paper-runtime.data :as data])
      (:require [clj-hdf5.core :as hdf5]))
    (let [time      (hdf5/read (data/get-data "time"))
          frequency (hdf5/read (data/get-data "frequency"))

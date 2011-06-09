@@ -1,4 +1,4 @@
-from e_paper_runtime import DataAccess
+from active_paper_runtime import DataAccess
 import HDF5
 
 def getData(name):

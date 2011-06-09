@@ -1,9 +1,9 @@
 (ns build-python-example
-  (:require [e-paper.storage :as ep])
-  (:use [e-paper.authoring :only (script)])
-  (:use [e-paper.execution :only (run-calclet)]))
+  (:require [active-paper.storage :as ep])
+  (:use [active-paper.authoring :only (script)])
+  (:use [active-paper.execution :only (run-calclet)]))
 
-; Create an empty e-paper
+; Create an empty active paper
 (def paper (ep/create (java.io.File. "python_example.h5")))
 
 ; Add references to the jar files from two libraries used by the calclets
@@ -25,7 +25,7 @@
 (run-calclet
  (script paper "calc-sine" "python" jars
 "
-from e_paper_data import readData, createData
+from active_paper_data import readData, createData
 import math
 
 frequency = readData(\"frequency\")
@@ -40,8 +40,8 @@ createData(\"sine\", sine)
 ; line plot of "time" vs. "sine".
 (script paper "view-sine" "python" (vec (concat jars plotting-jars))
 "
-from e_paper_data import readData, createData
-from e_paper_plotting import plot
+from active_paper_data import readData, createData
+from active_paper_plotting import plot
 
 plot(\"Sine curve\", \"time\", \"sine\",
      (\"sine(x)\", zip(readData(\"time\"), readData(\"sine\"))))
@@ -49,10 +49,10 @@ plot(\"Sine curve\", \"time\", \"sine\",
 ")
 
 ; Define a calclet that runs a Python console in the
-; environment of this e-paper. The console allows
+; environment of this active paper. The console allows
 ; interactive data analysis and line-by-line development
 ; of calclets.
 (ep/store-program paper "console" jars "org.python.util.jython" [])
 
-; Close the e-paper file.
+; Close the active paper file.
 (ep/close paper)

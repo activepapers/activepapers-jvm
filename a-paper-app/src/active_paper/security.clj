@@ -1,4 +1,4 @@
-(ns e-paper.security
+(ns active-paper.security
   (:import java.io.File))
 
 ; 
@@ -6,7 +6,7 @@
 ; security manager. When it is false, the security manager is deactivated,
 ; i.e. the permissions are those of a standard application.
 ; 
-; Since the root binding is true, only code from the e-paper launcher
+; Since the root binding is true, only code from the active-paper launcher
 ; can bind it to false, and it does so only through the macro
 ; with-full-permissions.
 ; 
@@ -16,7 +16,7 @@
 ; A SecurityManager that is active only when *access-control* is true.
 ;
 (def security-manager
-     (proxy [e_paper.EPaperSecurityManager] []
+     (proxy [active_paper.ActivePaperSecurityManager] []
      (checkPermission
       ([permission]
          (when *access-control*
@@ -77,7 +77,7 @@
        (if (some (partial starts-with name)
                  ["ch.systemsx.cisd.hdf5."
                   "ncsa.hdf."
-                  "e_paper.ExecutablePaperRef"])
+                  "active_paper.ActivePaperRef"])
          (.loadClass app-cl name)
          (proxy-super findClass name))))))
 

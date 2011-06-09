@@ -1,4 +1,4 @@
-package e_paper;
+package active_paper;
 
 import ch.systemsx.cisd.hdf5.IHDF5Reader;
 import ch.systemsx.cisd.hdf5.IHDF5Writer;
@@ -9,9 +9,9 @@ import java.util.HashMap;
 import java.util.Collections;
 
 import java.lang.SecurityManager;
-import e_paper.EPaperSecurityManager;
+import active_paper.ActivePaperSecurityManager;
 
-public final class ExecutablePaperRef {
+public final class ActivePaperRef {
 
 
     private static Map readers = Collections.synchronizedMap(new HashMap());
@@ -21,8 +21,8 @@ public final class ExecutablePaperRef {
 
     public static Class[] getStack() {
         SecurityManager sm = System.getSecurityManager();
-        if (sm instanceof EPaperSecurityManager) {
-            EPaperSecurityManager esm = (EPaperSecurityManager) sm;
+        if (sm instanceof ActivePaperSecurityManager) {
+            ActivePaperSecurityManager esm = (ActivePaperSecurityManager) sm;
             return esm.context();
         }
         else

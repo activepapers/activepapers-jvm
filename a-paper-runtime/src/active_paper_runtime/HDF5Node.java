@@ -1,4 +1,4 @@
-package e_paper_runtime;
+package active_paper_runtime;
 
 import ch.systemsx.cisd.hdf5.IHDF5Reader;
 import ch.systemsx.cisd.hdf5.IHDF5Writer;
@@ -8,7 +8,7 @@ import java.io.File;
 
 public class HDF5Node {
 
-    final static private File e_paper_library = new File(System.getenv("EPAPER_LIBRARY"));
+    final static private File a_paper_library = new File(System.getenv("ACTIVE_PAPER_LIBRARY"));
     final static private IHDF5Factory hdf5_factory = HDF5FactoryProvider.get();
 
     protected IHDF5Reader reader;
@@ -53,7 +53,7 @@ public class HDF5Node {
     }
 
     public boolean isReference() {
-        String attr_name = "e-paper-datatype";
+        String attr_name = "active-paper-datatype";
         return (reader.hasAttribute(path, attr_name)
                 && reader.getStringAttribute(path, attr_name).equals("reference"));
     }
@@ -63,7 +63,7 @@ public class HDF5Node {
             String[] data = reader.readStringArray(path);
             String library_name = data[0];
             String path = data[1];
-            File library_file = new File(e_paper_library, library_name);
+            File library_file = new File(a_paper_library, library_name);
             return new HDF5Node(hdf5_factory.openForReading(library_file), path).dereference();
         }
         else

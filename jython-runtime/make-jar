@@ -1,7 +1,7 @@
 #!/bin/bash
-export EPAPER=/Users/hinsen/projects/e-paper
+export APAPER=/Users/hinsen/projects/e-paper
 
-cd $EPAPER/jython-runtime
-cp $EPAPER/jars/jython-2.5.2.jar jython-2.5.2-with-runtime.jar
+cd $APAPER/jython-runtime
+cp $APAPER/jars/jython-2.5.2.jar jython-2.5.2-with-runtime.jar
 jar uf jython-2.5.2-with-runtime.jar Lib
-mv *.jar $EPAPER/jars
+mv *.jar $APAPER/jars

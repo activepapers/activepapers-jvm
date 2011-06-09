@@ -1,24 +1,24 @@
-(ns e-paper.dependencies
+(ns active-paper.dependencies
   (:require [clj-hdf5.core :as hdf5])
-  (:require [e-paper.storage :as storage])
+  (:require [active-paper.storage :as storage])
   (:import java.io.File))
 
 (defn- datatype
   [node]
-  (hdf5/get-attribute node "e-paper-datatype"))
+  (hdf5/get-attribute node "active-paper-datatype"))
 
 (defn- items
   [paper]
   (hdf5/walk paper identity (fn [n] (nil? (datatype n)))))
 
-(defn e-paper-items
+(defn active-paper-items
   "Find all items in the paper that are recognized by the
-   e-paper infrastructure."
+   active-paper infrastructure."
   [paper]
   (filter datatype (items paper)))
 
-(defn non-e-paper-items
-  "Find all items in the paper that are ignored by the e-paper infrastructure."
+(defn non-active-paper-items
+  "Find all items in the paper that are ignored by the active-paper infrastructure."
   [paper]
   (filter #(and (nil? (datatype %))
                 (or (not (hdf5/group? %))
@@ -28,7 +28,7 @@
 (defn library-references
   "Find all references to library data in the paper."
   [paper]
-  (filter storage/reference? (e-paper-items paper)))
+  (filter storage/reference? (active-paper-items paper)))
 
 (defn library-dependencies
   "Return a map from library names to vectors of references that point
@@ -45,7 +45,7 @@
   "Find the dependencies of item. Return nil if there are none."
   [item]
   (let [; look up the attribute storing dependencies
-        deps (hdf5/get-attribute item "e-paper-dependencies")
+        deps (hdf5/get-attribute item "active-paper-dependencies")
         ; if the attribute exists, read it
         deps (and deps (hdf5/read deps))
         ; remove the empty string that is added to keep HDF5 happy
@@ -57,19 +57,19 @@
    dependencies on other items."
   [paper]
   (filter (comp empty? dependencies)
-          (e-paper-items paper)))
+          (active-paper-items paper)))
 
 (defn dependent-items
   "Find all items in the paper that have dependencies."
   [paper]
-  (filter dependencies (e-paper-items paper)))
+  (filter dependencies (active-paper-items paper)))
 
 (defn dependency-hierarchy
   "Return a sequence of sets of items in the paper such that the items
    in any sets depend only on items in the previous sets. The first set
    contains the dependency-free items."
   [paper]
-  (let [items   (map #(vector % (set (dependencies %))) (e-paper-items paper))
+  (let [items   (map #(vector % (set (dependencies %))) (active-paper-items paper))
         groups  (group-by (comp empty? second) items)
         known   (set (map first (get groups true)))
         unknown (get groups false)
@@ -97,4 +97,4 @@
   (assert (set? items))
   (set (filter (fn [x] (not (empty? (clojure.set/intersection
                                     (set (dependencies x)) items))))
-               (e-paper-items paper))))
+               (active-paper-items paper))))

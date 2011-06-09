@@ -1,12 +1,12 @@
-(ns e-paper.app
+(ns active-paper.app
   (:gen-class)
   (:require [clojure.main])
   (:require [clojure.string :as str])
   (:require [clj-hdf5.core :as hdf5])
-  (:require [e-paper.storage :as storage])
-  (:require [e-paper.dependencies :as deps])
-  (:require [e-paper.execution :as run])
-  (:require [e-paper.security :as security])
+  (:require [active-paper.storage :as storage])
+  (:require [active-paper.dependencies :as deps])
+  (:require [active-paper.execution :as run])
+  (:require [active-paper.security :as security])
   (:import java.io.File))
 
 (defn error-exit
@@ -60,9 +60,9 @@
   [paper]
   (let [paper (open-paper paper :read-only)]
 
-    (when-let [non-e-paper (deps/non-e-paper-items paper)]
-      (println "HDF5 items not handled by e-paper:")
-      (doseq [node non-e-paper]
+    (when-let [non-active-paper (deps/non-active-paper-items paper)]
+      (println "HDF5 items not handled by active-paper:")
+      (doseq [node non-active-paper]
         (println (str "  " (hdf5/path node)))))
     
     (when-let [libraries (deps/library-dependencies paper)]
@@ -86,7 +86,7 @@
           (doseq [node items]
             (println (str "  " (hdf5/path node)))
             (let [calclet (hdf5/read (hdf5/get-attribute node
-                                         "e-paper-generating-calclet"))
+                                         "active-paper-generating-calclet"))
                   dependencies (filter (fn [n] (not (= calclet n)))
                                        (map hdf5/path (deps/dependencies node)))]
               (println (str "    dependencies: "
@@ -147,7 +147,7 @@
                (when (nil? ds)
                  (error-exit "Dataset " ds-name " not found"))
                (when-let [creator (hdf5/read-attribute
-                                   ds "e-paper-generating-calclet")]
+                                   ds "active-paper-generating-calclet")]
                  (when (pos? (count creator))
                    (error-exit "Dataset " ds-name
                                " owned by calclet " creator)))
@@ -164,44 +164,44 @@
 (def help-text
 "Commands:
 
-analyze <e-paper>
-  show the dependencies between the datasets in <e-paper>
+analyze <active-paper>
+  show the dependencies between the datasets in <active-paper>
 
-make_library <e-paper> <jar-spec> ...
-  creates an e-paper representing a code library from a
+make_library <active-paper> <jar-spec> ...
+  creates an active-paper representing a code library from a
   collection of jar files. Each jar-spec has the form
   name=jar_file_name, where name is the dataset name in
-  the code section of the e-paper.
+  the code section of the active-paper.
 
-open <e-paper>
-  opens e-paper and accepts a sequence of commands to work
-  on it. This is faster than running the e-paper tool repeatedly
+open <active-paper>
+  opens active-paper and accepts a sequence of commands to work
+  on it. This is faster than running the active-paper tool repeatedly
   for each command.
 
-print <e-paper> <dataset>
+print <active-paper> <dataset>
   prints the contents of a dataset
 
-rebuild <e-paper> <rebuilt-e-paper>
-  copies all non-dependent items from <e-paper> to <rebuilt-e-paper>
+rebuild <active-paper> <rebuilt-active-paper>
+  copies all non-dependent items from <active-paper> to <rebuilt-active-paper>
   and runs the calclets to rebuild the dependent items
 
-run_calclet <e-paper> <calclet-name>
-  run the named calclet from the e-paper
+run_calclet <active-paper> <calclet-name>
+  run the named calclet from the active-paper
   (provide the calclet name without the prefix /code)
 
 repl
-   start a Clojure repl with the e-paper classpath
+   start a Clojure repl with the active-paper classpath
    (This is a development tool.)
 
 script
-  run a Clojure script in the e-paper environment, usually to
-  create an e-paper
+  run a Clojure script in the active-paper environment, usually to
+  create an active-paper
 
 swank-server
-   start a swank server with the e-paper classpath
+   start a swank server with the active-paper classpath
    (This is a development tool.)
 
-update <e-paper> <dataset>=<value> ...
+update <active-paper> <dataset>=<value> ...
   updates the specified datasets and runs all calclets required
   to re-calculate dependent datasets
 ")
@@ -209,24 +209,24 @@ update <e-paper> <dataset>=<value> ...
 (def help-text-open
 "Commands:
 
-analyze <e-paper>
-  show the dependencies between the datasets in <e-paper>
+analyze <active-paper>
+  show the dependencies between the datasets in <active-paper>
 
 exit
   exit from the command interpreter
 
-print <e-paper> <dataset>
+print <active-paper> <dataset>
   prints the contents of a dataset
 
-rebuild <e-paper> <rebuilt-e-paper>
-  copies all non-dependent items from <e-paper> to <rebuilt-e-paper>
+rebuild <active-paper> <rebuilt-active-paper>
+  copies all non-dependent items from <active-paper> to <rebuilt-active-paper>
   and runs the calclets to rebuild the dependent items
 
-run_calclet <e-paper> <calclet-name>
-  run the named calclet from the e-paper
+run_calclet <active-paper> <calclet-name>
+  run the named calclet from the active-paper
   (provide the calclet name without the prefix /code)
 
-update <e-paper> <dataset>=<value> ...
+update <active-paper> <dataset>=<value> ...
   updates the specified datasets and runs all calclets required
   to re-calculate dependent datasets
   A value can be an integer, a float, or a string, or an
@@ -235,7 +235,7 @@ update <e-paper> <dataset>=<value> ...
   inside array values!
 
 <calclet-name>
-  run the named calclet from the e-paper
+  run the named calclet from the active-paper
 ")
 
 (def open-commands

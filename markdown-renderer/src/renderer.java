@@ -7,8 +7,8 @@ import javax.swing.*;
 import java.io.StringReader;
 import org.w3c.dom.*;
 
-import e_paper_runtime.DataAccess;
-import e_paper_runtime.HDF5Node;
+import active_paper_runtime.DataAccess;
+import active_paper_runtime.HDF5Node;
 
 public class renderer {
     public static void render(String text) {

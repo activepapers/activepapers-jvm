@@ -1,31 +1,31 @@
-(ns e-paper.storage
+(ns active-paper.storage
   (:require [clj-hdf5.core :as hdf5])
-  (:require [e-paper.utility :as utility])
+  (:require [active-paper.utility :as utility])
   (:import java.io.File))
 
 ;
 ; Location of the library
 ;
-(let [path (System/getenv "EPAPER_LIBRARY")]
+(let [path (System/getenv "ACTIVE_PAPER_LIBRARY")]
   (when (nil? path)
-    (throw (Exception. "Environment variable EPAPER_LIBRARY not set.")))
-  (def *e-paper-library* (File. path)))
+    (throw (Exception. "Environment variable ACTIVE_PAPER_LIBRARY not set.")))
+  (def *active-paper-library* (File. path)))
 
 (defn library-file
   "Return a java.io.File object for library-name"
   [library-name]
-  (File. *e-paper-library* (str library-name ".h5")))
+  (File. *active-paper-library* (str library-name ".h5")))
 
 ;
 ; Opening and closing
 ;
 (defn create
-  "Create a new empty e-paper. A previously existing file of the same
+  "Create a new empty active-paper. A previously existing file of the same
    name is overwritten."
   [file]
   (assert (isa? (class file) java.io.File))
   (let [root (hdf5/create file)]
-    (hdf5/create-attribute root "DATA_MODEL" "e-paper")
+    (hdf5/create-attribute root "DATA_MODEL" "active-paper")
     (hdf5/create-attribute root "DATA_MODEL_MAJOR_VERSION" 0)
     (hdf5/create-attribute root "DATA_MODEL_MINOR_VERSION" 1)
     (hdf5/create-group root "code")
@@ -41,9 +41,9 @@
 ; References
 ;
 (defn reference?
-  "Return true if ds is a reference to another e-paper."
+  "Return true if ds is a reference to another active-paper."
   [ds]
-  (when-let [attr (hdf5/get-attribute ds "e-paper-datatype")]
+  (when-let [attr (hdf5/get-attribute ds "active-paper-datatype")]
     (= (hdf5/read attr) "reference")))
 
 
@@ -70,7 +70,7 @@
     (assert (reference-exists? library path))
     (let [code (hdf5/lookup paper "code")
           ds   (hdf5/create-dataset code ds-name [library path])]
-      (hdf5/create-attribute ds "e-paper-datatype" "reference")
+      (hdf5/create-attribute ds "active-paper-datatype" "reference")
       ds)))
 
 (defn store-library-references
@@ -90,7 +90,7 @@
   (let [code (hdf5/lookup paper "code")
         ds   (hdf5/create-dataset code ds-name
                  {:tag "jar" :data (utility/read-file jar-file)})]
-    (hdf5/create-attribute ds "e-paper-datatype" "jar")))
+    (hdf5/create-attribute ds "active-paper-datatype" "jar")))
 
 (defn store-script
   "Store the script contained in script-file under name in paper
@@ -104,7 +104,7 @@
                  (slurp script-text-or-file))
         ds     (hdf5/create-dataset (hdf5/lookup paper "code")
                                     name script)]
-    (hdf5/create-attribute ds "e-paper-datatype" "script-calclet")
+    (hdf5/create-attribute ds "active-paper-datatype" "script-calclet")
     (hdf5/create-attribute ds "script-engine" script-engine)
     (hdf5/create-attribute ds "jvm-jar-files" (map hdf5/path jars))
     ds))
@@ -131,7 +131,7 @@
         program (hdf5/create-group code name)
         args    (map (fn [arg n] (process-program-arg program arg n))
                      args (iterate inc 1))]
-    (hdf5/create-attribute program "e-paper-datatype" "program-calclet")
+    (hdf5/create-attribute program "active-paper-datatype" "program-calclet")
     (hdf5/create-attribute program "jvm-main-class" main-class-name)
     ; Add an empty string to make sure the arg list is never empty,
     ; because HDF5 cannot handle empty arrays.
@@ -156,19 +156,19 @@
 (defn create-data
   ([paper name data]
    (let [ds (hdf5/create-dataset (hdf5/lookup paper "data") name data)]
-     (hdf5/create-attribute ds "e-paper-datatype" "data")
-     (hdf5/create-attribute ds "e-paper-generating-program" "")
-     (hdf5/create-attribute ds "e-paper-dependencies" [""])
+     (hdf5/create-attribute ds "active-paper-datatype" "data")
+     (hdf5/create-attribute ds "active-paper-generating-program" "")
+     (hdf5/create-attribute ds "active-paper-dependencies" [""])
      ds))
   ([paper name data data-model-name]
    (let [ds (create-data paper name data)]
-     (hdf5/create-attribute ds "e-paper-domain-data-model" data-model-name))))
+     (hdf5/create-attribute ds "active-paper-domain-data-model" data-model-name))))
 
 (defn create-text
   [paper name format text]
   (assert (string? format))
   (assert (string? text))
   (let [ds (hdf5/create-dataset (hdf5/lookup paper "text") name text)]
-    (hdf5/create-attribute ds "e-paper-datatype" "text")
-    (hdf5/create-attribute ds "e-paper-text-format" format)
+    (hdf5/create-attribute ds "active-paper-datatype" "text")
+    (hdf5/create-attribute ds "active-paper-text-format" format)
     ds))
