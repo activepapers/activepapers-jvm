@@ -14,12 +14,13 @@ import active_paper.ActivePaperSecurityManager;
 public final class ActivePaperRef {
 
 
-    private static Map readers = Collections.synchronizedMap(new HashMap());
-    private static Map writers = Collections.synchronizedMap(new HashMap());
-    private static Map calclets = Collections.synchronizedMap(new HashMap());
-    private static Map dependencies = Collections.synchronizedMap(new HashMap());
+    private static Map<ClassLoader,IHDF5Reader> readers = Collections.synchronizedMap(new HashMap<ClassLoader,IHDF5Reader>());
+    private static Map<ClassLoader,IHDF5Writer> writers = Collections.synchronizedMap(new HashMap<ClassLoader,IHDF5Writer>());
+    private static Map<ClassLoader,String> calclets = Collections.synchronizedMap(new HashMap<ClassLoader,String>());
+    private static Map<ClassLoader,ArrayList<String>> dependencies = Collections.synchronizedMap(new HashMap<ClassLoader,ArrayList<String>>());
 
-    public static Class[] getStack() {
+    @SuppressWarnings("rawtypes")
+	public static Class[] getStack() {
         SecurityManager sm = System.getSecurityManager();
         if (sm instanceof ActivePaperSecurityManager) {
             ActivePaperSecurityManager esm = (ActivePaperSecurityManager) sm;
@@ -44,7 +45,7 @@ public final class ActivePaperRef {
 
     public static IHDF5Reader getReader() {
         IHDF5Reader reader = null;
-        for (Class cl: getStack()) {
+        for (@SuppressWarnings("rawtypes") Class cl: getStack()) {
             reader = (IHDF5Reader)readers.get(cl.getClassLoader());
             if (reader != null)
                 break;
@@ -54,7 +55,7 @@ public final class ActivePaperRef {
 
     public static IHDF5Writer getWriter() {
         IHDF5Writer writer = null;
-        for (Class cl: getStack()) {
+        for (@SuppressWarnings("rawtypes") Class cl: getStack()) {
             writer = (IHDF5Writer)writers.get(cl.getClassLoader());
             if (writer != null)
                 break;
@@ -72,7 +73,7 @@ public final class ActivePaperRef {
 
     public static String getCurrentCalclet() {
         String calclet = null;
-        for (Class cl: getStack()) {
+        for (@SuppressWarnings("rawtypes") Class cl: getStack()) {
             calclet = (String)calclets.get(cl.getClassLoader());
             if (calclet != null)
                 break;
@@ -89,9 +90,9 @@ public final class ActivePaperRef {
     }
 
     public static List<String> getDependencyList() {
-        List dependency_list = null;
-        for (Class cl: getStack()) {
-            dependency_list = (List)dependencies.get(cl.getClassLoader());
+        List<String> dependency_list = null;
+        for (@SuppressWarnings("rawtypes") Class cl: getStack()) {
+            dependency_list = dependencies.get(cl.getClassLoader());
             if (dependency_list != null)
                 break;
         }
@@ -100,8 +101,8 @@ public final class ActivePaperRef {
 
     public static void addDependency(String ds_name) {
         List<String> dependency_list = null;
-        for (Class cl: getStack()) {
-            dependency_list = (List)dependencies.get(cl.getClassLoader());
+        for (@SuppressWarnings("rawtypes") Class cl: getStack()) {
+            dependency_list = dependencies.get(cl.getClassLoader());
             if (dependency_list != null)
                 break;
         }
