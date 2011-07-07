@@ -1,12 +1,12 @@
-(ns active-paper.app
+(ns active-papers.cltool
   (:gen-class)
   (:require [clojure.main])
   (:require [clojure.string :as str])
   (:require [clj-hdf5.core :as hdf5])
-  (:require [active-paper.storage :as storage])
-  (:require [active-paper.dependencies :as deps])
-  (:require [active-paper.execution :as run])
-  (:require [active-paper.security :as security])
+  (:require [active-papers.storage :as storage])
+  (:require [active-papers.dependencies :as deps])
+  (:require [active-papers.execution :as run])
+  (:require [active-papers.security :as security])
   (:import java.io.File))
 
 (defn error-exit

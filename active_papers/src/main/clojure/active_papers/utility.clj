@@ -1,4 +1,4 @@
-(ns active-paper.utility)
+(ns active-papers.utility)
 
 (defn read-file
   "Read the contents of a file into a byte array"

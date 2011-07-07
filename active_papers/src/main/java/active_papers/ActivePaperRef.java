@@ -1,4 +1,4 @@
-package active_paper;
+package active_papers;
 
 import ch.systemsx.cisd.hdf5.IHDF5Reader;
 import ch.systemsx.cisd.hdf5.IHDF5Writer;
@@ -9,7 +9,7 @@ import java.util.HashMap;
 import java.util.Collections;
 
 import java.lang.SecurityManager;
-import active_paper.ActivePaperSecurityManager;
+import active_papers.ActivePaperSecurityManager;
 
 public final class ActivePaperRef {
 

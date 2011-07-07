@@ -1,4 +1,4 @@
-(ns active-paper.security
+(ns active-papers.security
   (:import java.io.File))
 
 ; 
@@ -16,7 +16,7 @@
 ; A SecurityManager that is active only when *access-control* is true.
 ;
 (def security-manager
-     (proxy [active_paper.ActivePaperSecurityManager] []
+     (proxy [active_papers.ActivePaperSecurityManager] []
      (checkPermission
       ([permission]
          (when *access-control*
@@ -77,7 +77,9 @@
        (if (some (partial starts-with name)
                  ["ch.systemsx.cisd.hdf5."
                   "ncsa.hdf."
-                  "active_paper.ActivePaperRef"])
+                  "active_papers.ActivePaperRef"
+                  "active_paper_runtime.HDF5Node"
+                  "active_paper_runtime.DataAccess"])
          (.loadClass app-cl name)
          (proxy-super findClass name))))))
 

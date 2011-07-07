@@ -1,4 +1,4 @@
-package active_paper;
+package active_papers;
 
 import java.lang.SecurityManager;
 

@@ -1,19 +1,21 @@
-(ns active-paper.storage
+(ns active-papers.storage
   (:require [clj-hdf5.core :as hdf5])
-  (:require [active-paper.utility :as utility])
+  (:require [active-papers.utility :as utility])
   (:import java.io.File))
 
 ;
 ; Location of the library
 ;
-(let [path (System/getenv "ACTIVE_PAPER_LIBRARY")]
-  (when (nil? path)
-    (throw (Exception. "Environment variable ACTIVE_PAPER_LIBRARY not set.")))
-  (def *active-paper-library* (File. path)))
+(declare *active-paper-library*)
 
 (defn library-file
   "Return a java.io.File object for library-name"
   [library-name]
+  (when (nil? *active-paper-library*)
+    (let [path (System/getenv "ACTIVE_PAPER_LIBRARY")]
+      (when (nil? path)
+        (throw (Exception. "Environment variable ACTIVE_PAPER_LIBRARY not set.")))
+      (def *active-paper-library* (File. path))))
   (File. *active-paper-library* (str library-name ".h5")))
 
 ;

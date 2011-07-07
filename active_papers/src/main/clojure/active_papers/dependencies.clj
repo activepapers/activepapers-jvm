@@ -1,6 +1,6 @@
-(ns active-paper.dependencies
+(ns active-papers.dependencies
   (:require [clj-hdf5.core :as hdf5])
-  (:require [active-paper.storage :as storage])
+  (:require [active-papers.storage :as storage])
   (:import java.io.File))
 
 (defn- datatype

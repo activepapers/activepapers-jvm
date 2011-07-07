@@ -1,8 +1,8 @@
-(ns active-paper.authoring
-  (:require [active-paper.storage :as storage])
-  (:require [active-paper.security :as security])
-  (:require [active-paper.execution :as execution])
-  (:import active_paper.ActivePaperRef)
+(ns active-papers.authoring
+  (:require [active-papers.storage :as storage])
+  (:require [active-papers.security :as security])
+  (:require [active-papers.execution :as execution])
+  (:import active_papers.ActivePaperRef)
   (:require [clojure.contrib.pprint :as pprint]))
 
 (defmacro clojure-script

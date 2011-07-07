@@ -1,10 +1,10 @@
-(ns active-paper.execution
+(ns active-papers.execution
   (:require [clj-hdf5.core :as hdf5])
-  (:require [active-paper.storage :as storage])
-  (:require [active-paper.dependencies :as dependencies])
-  (:require [active-paper.security :as security])
-  (:require [active-paper.utility :as utility])
-  (:import active_paper.ActivePaperRef)
+  (:require [active-papers.storage :as storage])
+  (:require [active-papers.dependencies :as dependencies])
+  (:require [active-papers.security :as security])
+  (:require [active-papers.utility :as utility])
+  (:import active_papers.ActivePaperRef)
   (:import java.io.File))
 
 ;

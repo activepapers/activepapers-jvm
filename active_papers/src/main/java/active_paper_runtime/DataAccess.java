@@ -1,6 +1,6 @@
 package active_paper_runtime;
 
-import active_paper.ActivePaperRef;
+import active_papers.ActivePaperRef;
 
 import active_paper_runtime.HDF5Node;
 
