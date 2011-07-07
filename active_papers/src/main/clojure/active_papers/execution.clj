@@ -55,9 +55,7 @@
                               storage/dereference)
                          jar-paths)
         jar-files   (reduce write-jar '() jars)
-        temp-files  (concat temp-files jar-files)
-        jar-files   (conj jar-files (File. storage/*active-paper-library*
-                                           "active-paper-runtime.jar"))]
+        temp-files  (concat temp-files jar-files)]
     (try
       (let [cl  (security/make-class-loader jar-files)
             ccl (.getContextClassLoader (Thread/currentThread))]
