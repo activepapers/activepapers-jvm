@@ -1,0 +1,58 @@
+buildscript {
+    dependencies { classpath files('lib/build/clojuresque-1.4.1.jar',
+                                   'lib/build/runtime-1.4.1.jar') }
+}
+
+subprojects {
+    apply plugin: "java"
+    apply plugin: "clojure"
+
+    version = "0.1.0"
+
+    repositories {
+        flatDir dirs: project(':').file('lib/compile').absoluteFile
+        flatDir dirs: project(':').file('lib/runtime').absoluteFile
+        flatDir dirs: project(':').file('lib/build').absoluteFile
+    }
+}
+
+project(':active_papers') {
+
+    compileClojure.dependsOn compileJava
+    aotCompile = true
+
+    dependencies {
+        compile ":clojure:1.2.1"
+        compile ":clojure-contrib:1.2.0"
+        compile ":clj-hdf5:0.1"
+        compile ":jhdf5:11.05.2"
+    }
+
+    jar {
+       include "active_papers/**"
+       include "active_paper_runtime/**"
+    }
+}
+
+project(':active_paper_cltool') {
+
+    aotCompile = true
+    configurations.compile.transitive = true
+    uberjar.enabled = true
+
+    dependencies {
+        compile project(':active_papers')
+        runtime ":swank-clojure:1.4.0-SNAPSHOT"
+    }
+
+    jar {
+       include "active_papers/cltool*"
+       include "active_papers/cltool/**"
+    }
+
+    uberjar {
+       manifest {
+          attributes('Main-Class': 'active_papers.cltool')
+       }
+    }
+}
