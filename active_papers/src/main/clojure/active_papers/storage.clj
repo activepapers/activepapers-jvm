@@ -6,7 +6,7 @@
 ;
 ; Location of the library
 ;
-(declare *active-paper-library*)
+(def *active-paper-library* nil)
 
 (defn library-file
   "Return a java.io.File object for library-name"
