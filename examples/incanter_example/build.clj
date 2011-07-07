@@ -1,7 +1,7 @@
-(ns build-incanter-example
-  (:require [active-paper.storage :as ep])
-  (:use [active-paper.authoring :only (clojure-script)])
-  (:use [active-paper.execution :only (run-calclet)]))
+(ns incanter-example.build
+  (:require [active-papers.storage :as ep])
+  (:use [active-papers.authoring :only (clojure-script)])
+  (:use [active-papers.execution :only (run-calclet)]))
 
 ; Create an empty active paper
 (def paper (ep/create (java.io.File. "incanter_example.h5")))
@@ -24,7 +24,7 @@
 (run-calclet
  (clojure-script paper jars
    (ns calc-sine
-     (:use [active-paper-runtime.data]))
+     (:use [active-paper-clojure-runtime.data]))
    (let [time      (read-data "time")
          frequency (read-data "frequency")
          sine      (map #(Math/sin (* 2 Math/PI frequency %)) time)]
@@ -34,7 +34,7 @@
 ; line plot of "time" vs. "sine".
 (clojure-script paper jars
   (ns view-sine
-    (:use [active-paper-runtime.data])
+    (:use [active-paper-clojure-runtime.data])
     (:use [incanter.core])
     (:use [incanter.charts]))
   (view (xy-plot (read-data "time") (read-data "sine")
@@ -44,7 +44,7 @@
 ; representation of "time" vs. "sine".
 (clojure-script paper jars
   (ns sine-table
-    (:use [active-paper-runtime.data])
+    (:use [active-paper-clojure-runtime.data])
     (:use [incanter.core])
     (:use [incanter.charts]))
   (view (col-names (conj-cols (read-data "time") (read-data "sine"))
@@ -57,7 +57,7 @@
   (ns repl
     (:require clojure.main)
     (:require [clj-hdf5.core :as hdf5])
-    (:use [active-paper-runtime.data])
+    (:use [active-paper-clojure-runtime.data])
     (:use [incanter.core])
     (:use [incanter.charts])
     (:use [incanter.stats]))
