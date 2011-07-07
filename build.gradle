@@ -56,3 +56,15 @@ project(':active_paper_cltool') {
        }
     }
 }
+
+project(':language_support/clojure_runtime') {
+
+    dependencies {
+        compile project(':active_papers')
+    }
+
+//    jar {
+//       include "clojure/launcher.class"
+//       include "active_paper_clojure_runtime/**"
+//    }
+}
