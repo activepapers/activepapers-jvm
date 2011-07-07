@@ -8,8 +8,8 @@ import java.io.File;
 
 public class HDF5Node {
 
-    final static private File a_paper_library = new File(System.getenv("ACTIVE_PAPER_LIBRARY"));
-    final static private IHDF5Factory hdf5_factory = HDF5FactoryProvider.get();
+    static private File a_paper_library = null;
+    static private IHDF5Factory hdf5_factory = HDF5FactoryProvider.get();
 
     protected IHDF5Reader reader;
     protected IHDF5Writer writer;
@@ -63,6 +63,9 @@ public class HDF5Node {
             String[] data = reader.readStringArray(path);
             String library_name = data[0];
             String path = data[1];
+            if (a_paper_library == null) {
+                a_paper_library = new File(System.getenv("ACTIVE_PAPER_LIBRARY"));
+            }
             File library_file = new File(a_paper_library, library_name);
             return new HDF5Node(hdf5_factory.openForReading(library_file), path).dereference();
         }
