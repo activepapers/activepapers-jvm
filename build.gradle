@@ -100,3 +100,15 @@ project(':language_support/jython_plotting') {
     }
 }
 
+project(':language_support/markdown_renderer') {
+
+    apply plugin: "java"
+
+    dependencies {
+        compile project(':active_papers')
+        compile files(project(':').file('lib/support/markdownj-1.0.2b4-0.3.0.jar').absoluteFile,
+                      project(':').file('lib/support/cobra.jar').absoluteFile,
+                      project(':').file('lib/support/js.jar').absoluteFile)
+    }
+}
+
