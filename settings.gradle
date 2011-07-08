@@ -1,1 +1,1 @@
-include "active_papers", "active_paper_cltool", "language_support/clojure_runtime"
+include "active_papers", "active_paper_cltool", "language_support/clojure_runtime", "language_support/jython_runtime", "language_support/jython_plotting"

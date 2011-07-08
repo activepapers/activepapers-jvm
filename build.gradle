@@ -4,8 +4,6 @@ buildscript {
 }
 
 subprojects {
-    apply plugin: "java"
-    apply plugin: "clojure"
 
     version = "0.1.0"
 
@@ -17,6 +15,9 @@ subprojects {
 }
 
 project(':active_papers') {
+
+    apply plugin: "java"
+    apply plugin: "clojure"
 
     compileClojure.dependsOn compileJava
     aotCompile = true
@@ -35,6 +36,8 @@ project(':active_papers') {
 }
 
 project(':active_paper_cltool') {
+
+    apply plugin: "clojure"
 
     aotCompile = true
     configurations.compile.transitive = true
@@ -59,12 +62,41 @@ project(':active_paper_cltool') {
 
 project(':language_support/clojure_runtime') {
 
+    apply plugin: "java"
+    apply plugin: "clojure"
+
     dependencies {
         compile project(':active_papers')
     }
 
-//    jar {
-//       include "clojure/launcher.class"
-//       include "active_paper_clojure_runtime/**"
-//    }
+    jar {
+       include "clojure/launcher.class"
+       include "active_paper_clojure_runtime/**"
+    }
 }
+
+project(':language_support/jython_runtime') {
+
+    apply plugin: "java"
+
+    jar {
+        archiveName = "jython-2.5.2_with_runtime.jar"
+        into('Lib') {
+           from fileTree('Lib').include('**/*.py')
+        }
+        from zipTree(project(':').file('lib/support/jython-2.5.2.jar').absoluteFile)
+    }
+}
+
+project(':language_support/jython_plotting') {
+
+    apply plugin: "java"
+
+    jar {
+        archiveName = "jython-plotting.jar"
+        into('Lib') {
+           from fileTree('Lib').include('**/*.py')
+        }
+    }
+}
+

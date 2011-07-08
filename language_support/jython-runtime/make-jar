@@ -1,7 +1,0 @@
-#!/bin/bash
-export APAPER=/Users/hinsen/projects/e-paper
-
-cd $APAPER/jython-runtime
-cp $APAPER/jars/jython-2.5.2.jar jython-2.5.2-with-runtime.jar
-jar uf jython-2.5.2-with-runtime.jar Lib
-mv *.jar $APAPER/jars
