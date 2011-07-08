@@ -9,9 +9,9 @@
 ; write in reasonably sized chunks.
 
 (ns build-random-example
-  (:require [active-paper.storage :as ep])
-  (:use [active-paper.authoring :only (script, clojure-script)])
-  (:use [active-paper.execution :only (run-calclet)]))
+  (:require [active-papers.storage :as ep])
+  (:use [active-papers.authoring :only (script, clojure-script)])
+  (:use [active-papers.execution :only (run-calclet)]))
 
 ; Create an empty active paper
 (def paper (ep/create (java.io.File. "random_numbers.h5")))
@@ -21,8 +21,8 @@
 (def incanter-jars (ep/store-library-references paper "incanter"))
 
 ; Define input parameters
-(ep/create-data paper "random_seed" 42)
-(ep/create-data paper "sample_size" 1000)
+(ep/create-data paper "random-seed" 42)
+(ep/create-data paper "sample-size" 1000)
 
 ; Generate a sequence of random numbers in Python
 (run-calclet
@@ -31,8 +31,8 @@
 from active_paper_data import readData, createData, writeData, array_spec
 import random
 
-random.seed(readData(\"random_seed\"))
-nsample = readData(\"sample_size\")
+random.seed(readData(\"random-seed\"))
+nsample = readData(\"sample-size\")
 
 createData(\"random_numbers\", array_spec(float, (nsample,)))
 for i in xrange(nsample):
@@ -61,7 +61,7 @@ class mean_variance_accumulator(object):
             self.variance = (self.variance*(self.n-1)+d*(x-self.mean))/self.n
         self.n += 1
 
-nsample = readData(\"sample_size\")
+nsample = readData(\"sample-size\")
 
 acc = mean_variance_accumulator()
 for i in xrange(nsample):
@@ -74,7 +74,7 @@ createData(\"standard_deviation\", math.sqrt(acc.variance))
 ; Show a histogram using Incanter
 (clojure-script paper incanter-jars
   (ns view-histogram
-    (:use [active-paper-runtime.data])
+    (:use [active-paper-clojure-runtime.data])
     (:use [incanter.core])
     (:use [incanter.charts]))
   (view (histogram (read-data "random_numbers"))))
@@ -86,7 +86,7 @@ createData(\"standard_deviation\", math.sqrt(acc.variance))
   (ns repl
     (:require clojure.main)
     (:require [clj-hdf5.core :as hdf5])
-    (:use [active-paper-runtime.data])
+    (:use [active-paper-clojure-runtime.data])
     (:use [incanter.core])
     (:use [incanter.charts])
     (:use [incanter.stats]))

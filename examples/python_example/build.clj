@@ -1,7 +1,7 @@
 (ns build-python-example
-  (:require [active-paper.storage :as ep])
-  (:use [active-paper.authoring :only (script)])
-  (:use [active-paper.execution :only (run-calclet)]))
+  (:require [active-papers.storage :as ep])
+  (:use [active-papers.authoring :only (script)])
+  (:use [active-papers.execution :only (run-calclet)]))
 
 ; Create an empty active paper
 (def paper (ep/create (java.io.File. "python_example.h5")))
