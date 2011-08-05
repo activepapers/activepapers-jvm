@@ -1,0 +1,184 @@
+Getting started
+===============
+
+The command line tool "a-paper" allows the creation, inspection, and
+modification of executable papers. Enter "a-paper" with no
+arguments for a short command summary.
+
+An active paper is a HDF5 file containing datasets and
+calclets. Calclets are programs that read and write datasets. Calclets
+cannot have any input other than datasets from the same active paper,
+but they can produce output in other forms, in particular graphics for
+visualization. File I/O and network access are forbidden, for security
+reasons.
+
+The current implementation permits two types of calclets:
+
+- Scripts written in any language that implements the
+  Java Scripting API.
+
+- Standard JVM applications started by calling the "main" method
+  of a specified class with a supplied argument list.
+
+In practice, calclets are usually scripts written in some high-level
+language whose interpreter is available as JVM bytecode. The library
+supplied with this distribution provides scripting in Python and
+Clojure.
+
+Active papers can re-use datasets and code stored in other active
+papers through references. References are resolved by searching for
+the named active paper in the directory "library".  References can be
+used to build on earlier published work, In particular, large
+libraries of program code are typically stored in separate active
+papers and referenced from client papers. The small library shipped
+with this distribution contains Clojure and Python
+interpreters/compilers.
+
+
+Tutorial
+--------
+
+Active papers are constructed by running Clojure scripts that define input
+parameters and calclets. This is best illustrated by the example build
+scripts in the directory examples. They implement a very basic
+computation (calculating a sine function given a frequency and an
+array of time values) and provide a visualization script for the
+result. One example uses Python scripts, the other one Clojure scripts
+using the Incanter library for data management and visualization.  In
+the following I refer to python_example.clj, but you can substitute
+incanter_example.clj if you prefer. A third example file,
+random_number_example.clj, will be discussed in step 9.
+
+1) Create the active paper by running the build script
+
+     a-paper script python_example.clj
+
+   This creates a file python_example.h5 containing the complete
+   active paper.
+
+2) Inspect the contents of the paper using standard HDF5 tools
+   such as h5ls, h5dump, and hdfview. For example, look at the
+   dataset "sine" with
+
+     h5dump -d data/sine python_example.h5
+
+   This shows the values of the array "time", but also all the
+   metadata associated with it. Look at the attributes
+   "active-paper-dependencies" and "active-paper-generating-calclet"
+   to see how the dependency graph is stored.
+
+3) Inspect the logical structure of the file contents using
+
+     a-paper analyze python_example.h5
+
+4) Rebuild the paper using
+
+     a-paper rebuild python_example.h5 rebuilt_python_example.h5
+
+   Verify that the two files have the same contents with
+
+     h5diff -v python_example.h5 rebuilt_python_example.h5
+
+   Rebuilding starts by copying all primary items (those that have
+   no dependencies). Next, all calclets are run in the right order to
+   re-create dependent datasets. You can obtain a trace of 
+   calclet execution using
+
+     a-paper rebuild -t python_example.h5 rebuilt_python_example.h5
+
+5) Run the visualization script using
+
+     a-paper run_calclet python_example.h5 view-sine
+
+6) Modify the frequency using
+
+     a-paper update python_example.h5 frequency=0.3
+
+   This re-computes all dataset dependent on "frequency" by running
+   the required calclets. You can obtain a trace of 
+   calclet execution using
+
+     a-paper update -t python_example.h5 frequency=0.3
+
+7) Re-run the visualization script to see the modifications:
+
+     a-paper run_calclet python_example.h5 view-sine
+
+8a) If you know Python, run the console calclet using
+
+      a-paper -u run_calclet python_example.h5 console
+
+    Note the -u option for giving unrestricted permissions to the
+    calclet. The Jython console needs to access local files (e.g.
+    for storing its command line history), and therefore won't work
+    with the standard restrictive policy.
+
+    Next, type
+
+      from active_paper_data import readData
+      print readData("frequency")
+
+    The console calclet can be used for interactive data analysis
+    or for developing and testing calclets.
+
+8b) If you use the Clojure/Incanter version of the example,
+    run the REPL calclet using
+
+      a-paper run_calclet incanter_example.h5 repl
+
+    The REPL in Clojure has the same function as the console in Python.
+
+9) Run random_number_example.clj and look at the script and the
+   resulting HDF5 file to understand how it works. It illustrates
+   a) how to mix different programming languges in an e-paper
+   b) how to implement Monte-Carlo methods reproducibly by
+      storing the seed of the random number generator in the paper
+   c) how to read and write data in small chunks
+
+10) Run markdown_example.clj to see how text can be stored and
+    displayed using exactly the same mechanism that is used for
+    other data.
+
+11) Start modifying the examples and make your own active papers.
+
+
+Restrictions
+============
+
+The most important feature of the original proposal that is not yet
+implemented in this version of the code is the use of electronic
+certificates and signatures for provenance tracking.
+
+The run-time libraries that provide active paper access in Python and
+Clojure contain convenient but for the moment quite limited interfaces
+to the HDF5 library. They support only scalars and 1d arrays of
+integers, floats, and strings and permit only reading or writing the
+whole dataset in a single operation. A much wider range of datasets
+can be used by accessing the underlying JHDF5 library directly. Both
+Python and Clojure support this, it is merely less convenient.
+
+
+Security and policies
+=====================
+
+The Java security model is based on policies, which are collections of
+permissions granted to parts of code based on their provenance and
+environment. A policy is defined by a text file that lists all the
+permissions granted to specific classes of applications. Policy files
+can be edited using Oracle's policytool that is part of most Java
+installations.
+
+In the active paper system, the policy set on the Java command line defines
+the permissions that are applied to calclets. The current distribution
+contains two policy files:
+
+- lib/unrestricted.policy
+  grants all permissions to calclets
+
+- lib/active-paper.policy
+  grants only "safe" permissions to calclets
+
+When using the supplied a-paper script, the second (safe) permission
+set is used. The unrestricted policy can be substituted for personal
+development work. The script bin/e-paper uses the unrestricted policy
+when given the option -u somewhere on the command line.

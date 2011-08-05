@@ -1,0 +1,46 @@
+#!/bin/bash
+
+# Instructions:
+#
+# 1) Set APAPER to the path to the distribution directory.
+# 2) Copy this script into some directory on your shell search path.
+#
+# There are two policy files, "unrestricted.policy" and
+# "activee-paper.policy".  They determine the permissions granted to
+# calclets. With the unrestricted policy, a calclet has the same
+# permissions as any Java application.  The active-paper policy blocks
+# modifications to the file system and network access.
+
+# The following three lines identify the directory where the ActivePapers
+# software is installed. If you copy this script to some other place,
+# you must set APAPER to the installation directory by hand.
+cd "$( dirname "$0" )"
+cd ..
+export APAPER=`pwd`
+
+export APAPER_LIB=$APAPER/lib
+export ACTIVE_PAPER_LIBRARY=$APAPER/library
+
+policy=$APAPER_LIB/active-paper.policy
+opts=""
+
+set -- `getopt f:ut "$@"`
+[ $# -lt 1 ] && exit 1	# getopt failed
+while [ $# -gt 0 ]
+do
+    case "$1" in
+        -u)  policy=$APAPER_LIB/unrestricted.policy;;
+        -t)  opts=-t;;
+	--)  shift; break;;
+	-*)
+                echo >&2 \
+		"usage: $0 [-u] [-t] command active-paper-file ..."
+		exit 1;;
+	*)	break;;		# terminate while loop
+    esac
+    shift
+done
+
+# -Dfile.encoding=UTF-8 is required under MacOS to make the Jython console
+# work correctly.
+java -Dfile.encoding=UTF-8 -Djava.security.policy=$policy -jar $APAPER/active_paper_cltool/build/libs/*standalone*.jar $opts $*

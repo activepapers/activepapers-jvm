@@ -1,0 +1,65 @@
+ActivePapers is a software infrastructure for creating and working with
+electronic documents that contain scientific data, executable code
+working on this data, as well as visualization code and human-readable
+documentation. For more information, see
+
+   http://dirac.cnrs-orleans.fr/plone/software/activepapers/
+
+
+Installation
+============
+
+The following instructions should work on any Unix-like operating
+system; they have been tested with Linux (Ubuntu 10.04) and
+MacOS X (10.5 and 10.6). The ActivePapers system should work
+under Windows as well, but the installation procedure and the
+script in bin/a-paper need to be adapted.
+
+Prerequisites:
+- Java 6 or higher (Java 5 should work, but hasn't been tested)
+- Gradle 1.0 (http://www.gradle.org/)
+- wget for downloading the dependencies
+
+Steps:
+
+1) Go to the active_papers directory
+2) ./bin/initialize
+3) gradle build
+
+After that, you can run the command line tool with ./bin/a-paper.
+If you wish to copy this script to some other location on your computer,
+you need to change the three lines that identify the installation
+directory; see the comment in the script.
+
+For your first steps with ActivePapers, see doc/tutorial.txt.
+
+
+Acknowledgements
+================
+
+The following freely available JVM libraries are included in this
+distribution:
+
+- Clojure 1.2.1
+- Clojure-contrib 1.2.0
+- JHDF 11.05 (which includes the HDF5 library)
+- clj-hdf5 0.1
+- swank-clojure 1.3.0
+- clojure-jsr223
+- Jython 2.5.2
+- JFreeChart 1.3.0
+- JCommon 1.0
+- Incanter 1.2
+- Clojuresque 1.4.1
+
+I would like to thank the Clojure, Jython, and HDF5 communities as
+well as the author of the JHDF5 library for having answered many
+questions.
+
+This work was supported by the Agence Nationale de la Recherche
+(Contract No. ANR-2010-COSI-001-01).
+
+
+Konrad Hinsen
+Centre de Biophysique Moleculaire (CNRS)
+research@khinsen.fastmail.net
