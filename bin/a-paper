@@ -11,6 +11,7 @@
 # permissions as any Java application.  The active-paper policy blocks
 # modifications to the file system and network access.
 
+CWD=`pwd`
 # The following three lines identify the directory where the ActivePapers
 # software is installed. If you copy this script to some other place,
 # you must set APAPER to the installation directory by hand.
@@ -24,6 +25,7 @@ export ACTIVE_PAPER_LIBRARY=$APAPER/library
 policy=$APAPER_LIB/active-paper.policy
 opts=""
 
+cd $CWD
 set -- `getopt f:ut "$@"`
 [ $# -lt 1 ] && exit 1	# getopt failed
 while [ $# -gt 0 ]

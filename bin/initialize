@@ -3,8 +3,8 @@ cd "$( dirname "$0" )"
 cd ..
 export APAPER=`pwd`
 
-echo $APAPER
-
+rm -rf library
+mkdir library
 ln -s $APAPER/language_support/clojure_runtime/build/active_papers/clojure.h5 $APAPER/library/
 ln -s $APAPER/language_support/clojure_runtime/build/active_papers/incanter.h5 $APAPER/library/
 ln -s $APAPER/language_support/jython_plotting/build/active_papers/jython-plotting.h5 $APAPER/library/
