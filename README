@@ -6,8 +6,28 @@ documentation. For more information, see
    http://dirac.cnrs-orleans.fr/plone/software/activepapers/
 
 
-Installation
-============
+Working with a development snapshot
+===================================
+
+The following instructions should work on any Unix-like operating
+system; they have been tested with Linux (Ubuntu 10.04) and
+MacOS X (10.5 and 10.6).
+
+Prerequisites:
+- Java 6 or higher (Java 5 should work, but hasn't been tested)
+
+No installation is required. After unpacking the downlaoded file
+(which you presumably already did if you are reading this file), you
+can run the command line tool with ./bin/a-paper.  If you wish to copy
+this script to some other location on your computer, you need to
+change the three lines that identify the installation directory; see
+the comment in the script.
+
+For your first steps with ActivePapers, see doc/tutorial.txt.
+
+
+Building from source code
+=========================
 
 The following instructions should work on any Unix-like operating
 system; they have been tested with Linux (Ubuntu 10.04) and

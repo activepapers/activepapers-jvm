@@ -11,6 +11,9 @@ ln -s $APAPER/language_support/jython_plotting/build/active_papers/jython-plotti
 ln -s $APAPER/language_support/jython_runtime/build/active_papers/jython.h5 $APAPER/library/
 ln -s $APAPER/language_support/markdown_renderer/build/active_papers/markdown.h5 $APAPER/library/
 
+rm -f lib/*standalone*.jar
+ln -s $APAPER/active_paper_cltool/build/libs/active_paper_cltool-standalone-0.1.0.jar $APAPER/lib/
+
 wget http://dirac.cnrs-orleans.fr/~hinsen/active_papers_dependencies_1.tar.gz
 tar xzf active_papers_dependencies_1.tar.gz
 rm active_papers_dependencies_1.tar.gz

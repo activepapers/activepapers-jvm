@@ -1,0 +1,28 @@
+#!/bin/bash
+CWD=`pwd`
+cd "$( dirname "$0" )"
+cd ..
+export APAPER=`pwd`
+
+gradle -q build
+
+cd $CWD
+name=active_papers_`date "+%Y%m%d"`
+mkdir ${name}
+mkdir ${name}/bin
+mkdir ${name}/doc
+mkdir ${name}/examples
+mkdir ${name}/lib
+mkdir ${name}/library
+
+cp ${APAPER}/README ${name}/
+cp ${APAPER}/bin/a-paper ${name}/bin/
+cp ${APAPER}/lib/*.policy ${name}/lib/
+cp ${APAPER}/lib/*.jar ${name}/lib/
+cp ${APAPER}/library/*.h5 ${name}/library/
+cp -r ${APAPER}/doc ${name}
+cp -r ${APAPER}/examples ${name}
+find ${name}/examples -name \*.h5 -exec rm {} \;
+
+tar czf ${name}.tar.gz ${name}
+rm -r ${name}

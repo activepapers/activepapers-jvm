@@ -45,4 +45,4 @@ done
 
 # -Dfile.encoding=UTF-8 is required under MacOS to make the Jython console
 # work correctly.
-java -Dfile.encoding=UTF-8 -Djava.security.policy=$policy -jar $APAPER/active_paper_cltool/build/libs/*standalone*.jar $opts $*
+java -Dfile.encoding=UTF-8 -Djava.security.policy=$policy -jar $APAPER/lib/active_paper_cltool-standalone*.jar $opts $*
