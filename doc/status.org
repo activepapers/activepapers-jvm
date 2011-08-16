@@ -1,0 +1,44 @@
+* Design choices
+** HDF5 API for calclets and viewlets
+Calclets and viewlets need a well-defined API to access data in ActivePapers. Currently, a rather small API layer provides minimal access to data sets. Calclets can directly use the underlying JHDF5 library for more sophisticated manipulations. This approach was chosen for rapid implementation and is not necessarily the best one in the long run.
+
+There are at the moment five APIs for HDF5 access in Java:
+
+1) the [[http://www.hdfgroup.org/hdf-java-html/JNI/jhi5/index.html][low-level JNI wrappers]] for the C libraries, provided by the HDF Group
+2) a [[http://www.hdfgroup.org/hdf-java-html/hdf-object/index.html][high-level Java wrapper]] on top of the JNI layer, also provided by the HDF Group
+3) The [[https://wiki-bsse.ethz.ch/display/JHDF5/JHDF5%2B(HDF5%2Bfor%2BJava)][JHDF5]] library, which is an alternative high-level Java wrapper on top of the JNI layer, provided by ETH Zürich
+4) The [[http://www.unidata.ucar.edu/software/netcdf-java/][netCDF Java]] library, which provides read-only access to HDF5 files using pure Java code
+5) The [[http://www.ral.ucar.edu/~steves/nujan.html][Nujan]] library, which permits the creation of HDF5 files (but not the modification of existing files) using pure Java code
+
+The low-level JNI layer 1) provides access to all features of the HDF5 libray, at the price of being cumbersome to use. All other APIs have restrictions. The choice of JHDF5 for the current implementation was made for implementation convenience. JHDF5 is far easier to use (and presents much fewer surprises) than the HDF Group's high-level Java layer. Options 4) and 5) are not suitable for ActivePapers because read, write, and modify operations are required.
+
+The limitations of JHDF5 are probably acceptable for use in ActivePapers. A bigger problem is its reliance on the JNI layer. In the long run, it would be highly preferable to have a pure Java library for HDF5, in the interest of portability and long-term usability. It seem possible that a pure Java HDF implementation will be available one day, considering the important progress already made by 4) and 5). However, such a library is unlikely to be API compatible with JHDF5.
+
+At this time, the two approaches that can be considered seriously for an ActivePapers API are
+1) Use the JHDF5 API plus a very small ActivePapers-specific layer.
+2) Design and implement an ActivePapers-specific API for HDF5 access, implemented in terms of JHDF5 but with the possibility of switching to a pure Java library if and when it becomes available.
+
+* Features
+** TODO Viewlets (visualization scripts)
+Visualization is currently handled by calclets that open windows to display information. This is undesirable for various reasons:
+
+- The devices and techniques for graphical display should be defined by the runtime system rather than individual calclets. The same ActivePaper should be able to produce output in windows on a desktop computer and Web-based output when running on a server.
+
+- The graphical display code requires many permissions that calclets should not need.
+
+- A calclet can both modify data in the paper and produce visualization output. This makes it impossible to recompute the data without popping up windows at the same time. It also makes it impossible to produce visualization when working with read-only files.
+
+The solution to all these issues is to separate executable code into two categorie, calclets and viewlets. Calclets can read and write data in the paper, but not produce any output. Viewlets can read data and produce output, but not modify the paper. Viewlets prepare the data for display and then call an API provided by the ActivePapers runtime system to actually render the output for the user.
+** TODO Provenance tracking
+There is currently no way to indicate provenance for data that is not recomputable.
+** TODO Certificates and electronic signatures
+Electronic signatures and certificates can be used to verify authorship for individual data items and to validate provenance information. As a first step, this requires the implementation of a validation infrastructure for signatures and certificates. The Java library should provide most of this already.
+
+* Bugs
+
+* Runtime support for programming languages
+** Clojure
+*** Bugs
+**** TODO Java Scripting API support
+Running Clojure code through the Clojure interface to the Java Scripting API does not work at the moment.
+** Python (Jython)
