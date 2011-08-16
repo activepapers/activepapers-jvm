@@ -3,14 +3,6 @@ buildscript {
                                    'lib/build/runtime-1.4.1.jar') }
 }
 
-def filemap(m) {
-   return m.collect { k, v ->
-     k + '=' + (v.class == String ?
-                    project(':').file(v).absolutePath
-                    : v)
-   }
-}
-
 subprojects {
 
     version = "0.1.0"
@@ -82,50 +74,26 @@ project(':language_support/clojure_runtime') {
        include "active_paper_clojure_runtime/**"
     }
 
-    task makeLibrary {
-      paper = 'clojure.h5'
-      libs = ['clojure': 'lib/compile/clojure-1.2.1.jar',
-              'clojure-contrib': 'lib/compile/clojure-contrib-1.2.0.jar',
-              'clojure-scripting': 'lib/support/clojure-jsr223.jar',
-              'clojure-hdf5': 'lib/compile/clj-hdf5-0.1.jar',
-              'clojure-runtime': project.jar.archivePath,
-              'clojure-swank': 'lib/runtime/swank-clojure-1.4.0-SNAPSHOT.jar']
-
-      inputs.file project.jar.archivePath
-      destDir = new File(buildDir, 'active_papers')
-      libFile = new File(destDir, paper)
-      outputs.dir destDir
-      doLast {
-          destDir.mkdirs()
-          javaexec {
-              classpath = project(':active_paper_cltool').sourceSets.main.runtimeClasspath
-              main = 'active_papers.cltool'
-              args = ['make_library', libFile.absolutePath] + filemap(libs)
-          }
-      }
+    task makeLibrary(type: MakeLibraryTask) {
+       paper = 'clojure.h5'
+       lib_dir = project.getRootDir()
+       libs = ['clojure': 'lib/compile/clojure-1.2.1.jar',
+               'clojure-contrib': 'lib/compile/clojure-contrib-1.2.0.jar',
+               'clojure-scripting': 'lib/support/clojure-jsr223.jar',
+               'clojure-hdf5': 'lib/compile/clj-hdf5-0.1.jar',
+               'clojure-runtime': project.jar.archivePath,
+               'clojure-swank': 'lib/runtime/swank-clojure-1.4.0-SNAPSHOT.jar']
     }
     makeLibrary.dependsOn jar
     build.dependsOn makeLibrary
 
-    task makeLibraryIncanter {
-      paper = 'incanter.h5'
-      libs = ['incanter': 'lib/support/incanter.jar',
-              'clojure-hdf5': 'lib/compile/clj-hdf5-0.1.jar',
-              'clojure-runtime': project.jar.archivePath,
-              'clojure-swank': 'lib/runtime/swank-clojure-1.4.0-SNAPSHOT.jar']
-
-      inputs.file project.jar.archivePath
-      destDir = new File(buildDir, 'active_papers')
-      libFile = new File(destDir, paper)
-      outputs.dir destDir
-      doLast {
-          destDir.mkdirs()
-          javaexec {
-              classpath = project(':active_paper_cltool').sourceSets.main.runtimeClasspath
-              main = 'active_papers.cltool'
-              args = ['make_library', libFile.absolutePath] + filemap(libs)
-          }
-      }
+    task makeLibraryIncanter(type: MakeLibraryTask) {
+       paper = 'incanter.h5'
+       lib_dir = project.getRootDir()
+       libs = ['incanter': 'lib/support/incanter.jar',
+               'clojure-hdf5': 'lib/compile/clj-hdf5-0.1.jar',
+               'clojure-runtime': project.jar.archivePath,
+               'clojure-swank': 'lib/runtime/swank-clojure-1.4.0-SNAPSHOT.jar']
     }
     makeLibraryIncanter.dependsOn jar
     build.dependsOn makeLibraryIncanter
@@ -143,22 +111,10 @@ project(':language_support/jython_runtime') {
         from zipTree(project(':').file('lib/support/jython-2.5.2.jar').absoluteFile)
     }
 
-    task makeLibrary {
-      paper = 'jython.h5'
-      libs = ['jython': project.jar.archivePath]
-
-      inputs.file project.jar.archivePath
-      destDir = new File(buildDir, 'active_papers')
-      libFile = new File(destDir, paper)
-      outputs.dir destDir
-      doLast {
-          destDir.mkdirs()
-          javaexec {
-              classpath = project(':active_paper_cltool').sourceSets.main.runtimeClasspath
-              main = 'active_papers.cltool'
-              args = ['make_library', libFile.absolutePath] + filemap(libs)
-          }
-      }
+    task makeLibrary(type: MakeLibraryTask) {
+       paper = 'jython.h5'
+       lib_dir = project.getRootDir()
+       libs = ['jython': project.jar.archivePath]
     }
     makeLibrary.dependsOn jar
     build.dependsOn makeLibrary
@@ -175,24 +131,12 @@ project(':language_support/jython_plotting') {
         }
     }
 
-    task makeLibrary {
-      paper = 'jython-plotting.h5'
-      libs = ['jython-plotting': project.jar.archivePath,
-              'jfreechart': 'lib/support/jfreechart-1.0.13.jar',
-              'jcommon': 'lib/support/jcommon-1.0.16.jar']
-
-      inputs.file project.jar.archivePath
-      destDir = new File(buildDir, 'active_papers')
-      libFile = new File(destDir, paper)
-      outputs.dir destDir
-      doLast {
-          destDir.mkdirs()
-          javaexec {
-              classpath = project(':active_paper_cltool').sourceSets.main.runtimeClasspath
-              main = 'active_papers.cltool'
-              args = ['make_library', libFile.absolutePath] + filemap(libs)
-          }
-      }
+    task makeLibrary(type: MakeLibraryTask) {
+       paper = 'jython-plotting.h5'
+       lib_dir = project.getRootDir()
+       libs = ['jython-plotting': project.jar.archivePath,
+               'jfreechart': 'lib/support/jfreechart-1.0.13.jar',
+               'jcommon': 'lib/support/jcommon-1.0.16.jar']
     }
     makeLibrary.dependsOn jar
     build.dependsOn makeLibrary
@@ -209,48 +153,43 @@ project(':language_support/markdown_renderer') {
                       project(':').file('lib/support/js.jar').absoluteFile)
     }
 
-    task makeLibrary {
-      paper = 'markdown.h5'
-      libs = ['renderer': project.jar.archivePath,
-              'markdownj': 'lib/support/markdownj-1.0.2b4-0.3.0.jar',
-              'cobra': 'lib/support/cobra.jar',
-              'js': 'lib/support/js.jar']
-
-      inputs.file project.jar.archivePath
-      destDir = new File(buildDir, 'active_papers')
-      libFile = new File(destDir, paper)
-      outputs.dir destDir
-      doLast {
-          destDir.mkdirs()
-          javaexec {
-              classpath = project(':active_paper_cltool').sourceSets.main.runtimeClasspath
-              main = 'active_papers.cltool'
-              args = ['make_library', libFile.absolutePath] + filemap(libs)
-          }
-      }
+    task makeLibrary(type: MakeLibraryTask) {
+       paper = 'markdown.h5'
+       lib_dir = project.getRootDir()
+       libs = ['renderer': project.jar.archivePath,
+               'markdownj': 'lib/support/markdownj-1.0.2b4-0.3.0.jar',
+               'cobra': 'lib/support/cobra.jar',
+               'js': 'lib/support/js.jar']
     }
     makeLibrary.dependsOn jar
     build.dependsOn makeLibrary
 }
 
 // A custom task class meant to shorten all the makeLibrary tasks.
-// Using it leads to an "internal error"...
 class MakeLibraryTask extends DefaultTask {
-    def String paper = 'active_paper.h5'
-    def libs = []
-    @TaskAction
-    def makeLibrary() {
-        inputs.file project.jar.archivePath
-        destDir = new File(project.buildDir, 'active_papers')
-        libFile = new File(destDir, paper)
-        outputs.dir destDir
-        doLast {
-            destDir.mkdirs()
-            javaexec {
-                classpath = project(':active_paper_cltool').sourceSets.main.runtimeClasspath
-                main = 'active_papers.cltool'
-                args = ['make_library', libFile.absolutePath] + filemap(libs)
-            }
-        }
-    }
+   @InputFile
+   File someFile = project.jar.archivePath // intended as replacement for "inputs.file project.jar.archivePath"; not sure what it's needed for
+
+   @OutputDirectory
+   File destDir = new File(project.buildDir, 'active_papers')
+
+   String paper = 'active_paper.h5'
+   def String lib_dir = project.getProjectDir()
+   def libs = []
+
+   @TaskAction
+   def makeLibrary() {
+       libFile = new File(destDir, paper)
+       destDir.mkdirs()
+       project.javaexec {
+           classpath = project.project(':active_paper_cltool').sourceSets.main.runtimeClasspath
+           main = 'active_papers.cltool'
+           args = ['make_library', libFile.absolutePath] + 
+                  libs.collect { k, v ->
+                                     k + '=' + (v.class == String ?
+                                        new File(lib_dir, v)
+                                        : v)
+                  }
+       }
+   }
 }
